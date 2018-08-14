@@ -98,8 +98,6 @@ void run() {
 			ngx->adjust(EVENT_ALTITUDE_SELECTOR, ctrl->altitude);
 			ngx->adjust(EVENT_COURSE_SELECTOR_L, ctrl->courseL);
 			ngx->adjust(EVENT_COURSE_SELECTOR_R, ctrl->courseR);
-			//ngx->set(EVT_MCP_CRS_L_SET, ctrl->courseL, sPmdgData.MCP_Course[0]);
-
 			ngx->adjust(EVENT_BARO_SELECTOR_L, ctrl->efisBaro);
 			ngx->adjust(EVENT_MINS_SELECTOR_L, ctrl->efisMins);
 
@@ -172,8 +170,13 @@ void lab() {
 			printf("EFIS Range = %d, EFIS Mode = %d\n", ctrl->efisRange, ctrl->efisMode);
 			value += ctrl->airspeed;
 
-			unsigned long b = dataReceived.mip.mipButtons;
 			int i;
+			for (i = 0; i < 16; i++) {
+				if (dataReceived.mcp.buttons & (1 << i)) break;
+			}
+			printf("mcp buttons %x, bit %d\n", dataReceived.mcp.buttons, i);
+
+			unsigned long b = dataReceived.mip.mipButtons;
 			for (i = 0; i < 32; i++) {
 				if (b == (unsigned long)(~(1 << i))) break;
 			}
@@ -190,10 +193,6 @@ void lab() {
 		time_t seconds = time(NULL);
 
 		dataToSend.mcp.buttons = (1 << counter1);
-		dataToSend.mip.warnLeds = (1 << counter1);
-		dataToSend.mip.leds[0] = (1 << counter2);
-		dataToSend.mip.leds[1] = (1 << counter2);
-		dataToSend.mip.leds[2] = (1 << counter2);
 		dataToSend.mip.flaps = getGaugeValue(value);
 		int mask = seconds % 2 ? 0xFFFFAFFF : 0xFFFFFFFF;
 		dataToSend.mcp.speedCrsL = displayHi(value) & mask & displayLo((float)0.78);
@@ -205,9 +204,9 @@ void lab() {
 		mip.sendData(&dataToSend.mip);
 		counter1++;
 		counter2++;
-		if (counter1 == 16) counter1 = 0;`
+		if (counter1 == 16) counter1 = 0;
 		if (counter2 == 8) counter2 = 0;
-		Sleep(100);
+		Sleep(500);
 	}
 }
 
@@ -222,8 +221,6 @@ void connect(SerialPort* port, const wchar_t* path, const char* name) {
 int _tmain(int argc, _TCHAR* argv[]) {
 	connect(&mcp, L"COM5", "MCP");
 	connect(&mip, L"COM6", "MIP");
-	radio.connect(L"COM7");
-
 	//lab();
 	run();
 	mip.close();

@@ -89,13 +89,6 @@ public:
 			SimConnect_TransmitClientEvent(hSimConnect, 0, eventId, flag, SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
 	}
 
-	void set(unsigned int eventId, char delta, unsigned short value) {
-		char n = delta*delta;
-		if (n) {
-			send(eventId, delta > 0 ? value + n : value - n);
-		}
-	}
-
 	void setData(SIMCONNECT_RECV_CLIENT_DATA *pData) {
 		if (pData->dwRequestID == DATA_REQUEST) {
 			auto pS = (PMDG_NGX_Data*)&pData->dwData;

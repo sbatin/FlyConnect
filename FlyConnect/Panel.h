@@ -7,9 +7,38 @@ SerialPort mip = SerialPort();
 SerialPort mcp = SerialPort();
 
 struct mip_data_t {
-	unsigned short warnLeds;
+	unsigned char annunFireWarning     : 1;
+	unsigned char /* reserved bits */  : 7;
+	unsigned char annunWarnFltCont     : 1;
+	unsigned char annunWarnElec        : 1;
+	unsigned char annunWarnIRS         : 1;
+	unsigned char annunWarnAPU         : 1;
+	unsigned char annunWarnFuel        : 1;
+	unsigned char annunWarnOvht        : 1;
+	unsigned char annunMasterCaution   : 1;
+	unsigned char /* reserved bits */  : 1;
 	unsigned short flaps;
-	unsigned char leds[3];
+	unsigned char annunNGearRed        : 1;
+	unsigned char annunNGearGrn        : 1;
+	unsigned char annunRGearRed        : 1;
+	unsigned char annunRGearGrn        : 1;
+	unsigned char annunLGearRed        : 1;
+	unsigned char annunLGearGrn        : 1;
+	unsigned char /* reserved bits */  : 2;
+	unsigned char annunFlapsTransit    : 1;
+	unsigned char annunFlapsExt        : 1;
+	unsigned char annunAutobreakDisarm : 1;
+	unsigned char annunAntiskidInop    : 1;
+	unsigned char annunStabOutOfTrim   : 1;
+	unsigned char /* reserved bits */  : 3;
+	unsigned char annunBelowGS         : 1;
+	unsigned char annunAPRstYel        : 1;
+	unsigned char annunAPRstRed        : 1;
+	unsigned char annunATRstYel        : 1;
+	unsigned char annunATRstRed        : 1;
+	unsigned char annunFMCRstYel       : 1;
+	unsigned char annunSpeedbrakNotArm : 1;
+	unsigned char annunSpeedbrakeArmed : 1;
 	unsigned char backlight;
 };
 
@@ -66,40 +95,6 @@ struct panel_data_t dataToSend;
 #define BTN_LVLCHG (1 << 13)
 #define BTN_HDGSEL (1 << 14)
 #define BTN_APP    (1 << 15)
-
-// LEDS group 0
-#define LED_NGEAR_RED  (1 << 0)
-#define LED_NGEAR_GRN  (1 << 1)
-#define LED_RGEAR_RED  (1 << 2)
-#define LED_RGEAR_GRN  (1 << 3)
-#define LED_LGEAR_RED  (1 << 4)
-#define LED_LGEAR_GRN  (1 << 5)
-
-// LEDS group 1
-#define LED_FLAPS_TRANS      (1 << 0)
-#define LED_FLAPS_EXT        (1 << 1)
-#define LED_AUTOBREAK_DISARM (1 << 2)
-#define LED_ANTISKID_INOP    (1 << 3)
-#define LED_STAB_OUTOF_TRIM  (1 << 4)
-
-// LEDS group 2
-#define LED_BELOW_GS (1 << 0)
-#define LED_AP_YEL   (1 << 1)
-#define LED_AP_RED   (1 << 2)
-#define LED_AT_YEL   (1 << 3)
-#define LED_AT_RED   (1 << 4)
-#define LED_FMC_YEL  (1 << 5)
-#define LED_SPEEDBRAKE_NOTARM (1 << 6)
-#define LED_SPEEDBRAKE_ARMED  (1 << 7)
-
-#define LED_FIRE_WARNING (1 << 0)
-#define LED_WARN_FLTCONT (1 << 8)
-#define LED_WARN_ELEC    (1 << 9)
-#define LED_WARN_IRS     (1 << 10)
-#define LED_WARN_APU     (1 << 11)
-#define LED_WARN_FUEL    (1 << 12)
-#define LED_WARN_OVHT    (1 << 13)
-#define LED_MSTR_CAUTION (1 << 14)
 
 /*
 *** MIP buttons mapping ***
@@ -177,57 +172,74 @@ unsigned short getGaugeValue(float flapsValue) {
 	return 0;
 }
 
-void sendTestData() {
-	time_t seconds = time(NULL);
+void lightsTest() {
+	auto seconds = time(NULL);
 
 	dataToSend.mcp.speedCrsL = seconds % 3 == 0 ? 0x888F8888 : DISP_OFF_MASK;
 	dataToSend.mcp.vspeedCrsR = seconds % 3 == 0 ? 0x888C8880 : DISP_OFF_MASK;
 	dataToSend.mcp.altitudeHdg = seconds % 3 == 0 ? 0x88888880 : DISP_OFF_MASK;
-
 	dataToSend.mcp.buttons = 0xFFFF;
-	dataToSend.mcp.brightness = 2;
-	dataToSend.mcp.backlight = 0;
-	dataToSend.mip.leds[0] = 0xFF;
-	dataToSend.mip.leds[1] = 0xFF;
-	dataToSend.mip.leds[2] = LED_SPEEDBRAKE_ARMED | LED_SPEEDBRAKE_NOTARM | LED_BELOW_GS;
+	dataToSend.mip.annunNGearGrn = 1;
+	dataToSend.mip.annunNGearRed = 1;
+	dataToSend.mip.annunRGearGrn = 1;
+	dataToSend.mip.annunRGearRed = 1;
+	dataToSend.mip.annunLGearGrn = 1;
+	dataToSend.mip.annunLGearRed = 1;
+	dataToSend.mip.annunAntiskidInop = 1;
+	dataToSend.mip.annunAutobreakDisarm = 1;
+	dataToSend.mip.annunFlapsExt = 1;
+	dataToSend.mip.annunFlapsTransit = 1;
+	dataToSend.mip.annunStabOutOfTrim = 1;
+	dataToSend.mip.annunBelowGS = 1;
+	dataToSend.mip.annunSpeedbrakeArmed = 1;
+	dataToSend.mip.annunSpeedbrakNotArm = 1;
+}
 
-	mcp.sendData(&dataToSend.mcp);
-	mip.sendData(&dataToSend.mip);
+enum DisplayState { Blank = 0, Enabled = 1, Overspeed = 2, Underspeed = 3 };
+
+void setMCPDisplays(unsigned short courseL, float IASKtsMach, DisplayState IASState, unsigned short heading, unsigned short altitude, short vertSpeed, bool vsEnabled, unsigned short courseR) {
+	dataToSend.mcp.speedCrsL = displayHi(courseL);
+	dataToSend.mcp.vspeedCrsR = displayHi(courseR);
+	dataToSend.mcp.altitudeHdg = displayHi(heading) & displayLo(altitude);
+
+	if (IASState != Blank) {
+		if (IASState == Overspeed) {
+			dataToSend.mcp.speedCrsL &= 0xFFFFBFFF;
+		}
+
+		if (IASState == Underspeed) {
+			dataToSend.mcp.speedCrsL &= 0xFFFFAFFF;
+		}
+
+		if (IASKtsMach < 10) {
+			dataToSend.mcp.speedCrsL &= displayLo(IASKtsMach);
+		} else {
+			dataToSend.mcp.speedCrsL &= displayLo((int)IASKtsMach);
+		}
+	}
+
+	if (vsEnabled) {
+		dataToSend.mcp.vspeedCrsR &= displayLo(vertSpeed, 0xFFFF0000);
+	}
 }
 
 void sendNGX_PanelState(PMDG_NGX_Data* state) {
-	// test mode
-	if (state->MAIN_LightsSelector == 0) {
-		sendTestData();
-		return;
-	}
+	auto seconds = time(NULL);
 
 	if (state->ELEC_BatSelector) {
-		dataToSend.mcp.speedCrsL = displayHi(state->MCP_Course[0]);
-		dataToSend.mcp.vspeedCrsR = displayHi(state->MCP_Course[1]);
-		dataToSend.mcp.altitudeHdg = displayHi(state->MCP_Heading) & displayLo(state->MCP_Altitude);
-
-		time_t seconds = time(NULL);
+		DisplayState IASState = Blank;
 
 		if (!state->MCP_IASBlank) {
 			if (state->MCP_IASOverspeedFlash && seconds % 2 == 0) {
-				dataToSend.mcp.speedCrsL &= 0xFFFFBFFF;
-			}
-
-			if (state->MCP_IASUnderspeedFlash && seconds % 2 == 0) {
-				dataToSend.mcp.speedCrsL &= 0xFFFFAFFF;
-			}
-
-			if (state->MCP_IASMach < 10) {
-				dataToSend.mcp.speedCrsL &= displayLo(state->MCP_IASMach);
+				IASState = Overspeed;
+			} else if (state->MCP_IASUnderspeedFlash && seconds % 2 == 0) {
+				IASState = Underspeed;
 			} else {
-				dataToSend.mcp.speedCrsL &= displayLo((int)state->MCP_IASMach);
+				IASState = Enabled;
 			}
 		}
 
-		if (!state->MCP_VertSpeedBlank) {
-			dataToSend.mcp.vspeedCrsR &= displayLo(state->MCP_VertSpeed, 0xFFFF0000);
-		}
+		setMCPDisplays(state->MCP_Course[0], state->MCP_IASMach, IASState, state->MCP_Heading, state->MCP_Altitude, state->MCP_VertSpeed, !state->MCP_VertSpeedBlank, state->MCP_Course[1]);
 	} else {
 		dataToSend.mcp.speedCrsL = DISP_OFF_MASK;
 		dataToSend.mcp.vspeedCrsR = DISP_OFF_MASK;
@@ -250,54 +262,48 @@ void sendNGX_PanelState(PMDG_NGX_Data* state) {
 		setBit(BTN_N1, state->MCP_annunN1) |
 		setBit(BTN_VS, state->MCP_annunVS) |
 		setBit(BTN_CMDB, state->MCP_annunCMD_B);
+	
+	dataToSend.mcp.backlight = state->LTS_MainPanelKnob[0];
+	dataToSend.mip.backlight = state->LTS_MainPanelKnob[0];
+	dataToSend.mip.flaps = getGaugeValue(state->MAIN_TEFlapsNeedle[0]);
+	dataToSend.mip.annunNGearGrn = state->MAIN_annunGEAR_locked[1];
+	dataToSend.mip.annunNGearRed = state->MAIN_annunGEAR_transit[1];
+	dataToSend.mip.annunRGearGrn = state->MAIN_annunGEAR_locked[0];
+	dataToSend.mip.annunRGearRed = state->MAIN_annunGEAR_transit[0];
+	dataToSend.mip.annunLGearGrn = state->MAIN_annunGEAR_locked[2];
+	dataToSend.mip.annunLGearRed = state->MAIN_annunGEAR_transit[2];
+	dataToSend.mip.annunAntiskidInop = state->MAIN_annunANTI_SKID_INOP;
+	dataToSend.mip.annunAutobreakDisarm = state->MAIN_annunAUTO_BRAKE_DISARM;
+	dataToSend.mip.annunFlapsExt = state->MAIN_annunLE_FLAPS_EXT;
+	dataToSend.mip.annunFlapsTransit = state->MAIN_annunLE_FLAPS_TRANSIT;
+	dataToSend.mip.annunStabOutOfTrim = state->MAIN_annunSTAB_OUT_OF_TRIM;
+	dataToSend.mip.annunAPRstRed = state->MAIN_annunAP[0];
+	dataToSend.mip.annunAPRstYel = state->MAIN_annunAP_Amber[0];
+	dataToSend.mip.annunATRstRed = state->MAIN_annunAT[0];
+	dataToSend.mip.annunATRstYel = state->MAIN_annunAT_Amber[0];
+	dataToSend.mip.annunFMCRstYel = state->MAIN_annunFMC[0];
+	dataToSend.mip.annunSpeedbrakeArmed = state->MAIN_annunSPEEDBRAKE_ARMED;
+	dataToSend.mip.annunSpeedbrakNotArm = state->MAIN_annunSPEEDBRAKE_DO_NOT_ARM;
+	dataToSend.mip.annunBelowGS = state->MAIN_annunBELOW_GS[0];
+	dataToSend.mip.annunFireWarning = state->WARN_annunFIRE_WARN[0];
+	dataToSend.mip.annunMasterCaution = state->WARN_annunMASTER_CAUTION[0];
+	dataToSend.mip.annunWarnFltCont = state->WARN_annunFLT_CONT;
+	dataToSend.mip.annunWarnElec = state->WARN_annunELEC;
+	dataToSend.mip.annunWarnIRS = state->WARN_annunIRS;
+	dataToSend.mip.annunWarnAPU = state->WARN_annunAPU;
+	dataToSend.mip.annunWarnFuel = state->WARN_annunFUEL;
+	dataToSend.mip.annunWarnOvht = state->WARN_annunOVHT_DET;
 
+	// test
+	if (state->MAIN_LightsSelector == 0) {
+		lightsTest();
 	// bright
-	if (state->MAIN_LightsSelector == 1) {
+	} else if (state->MAIN_LightsSelector == 1) {
 		dataToSend.mcp.brightness = 8;
 	// dim
 	} else if (state->MAIN_LightsSelector == 2) {
 		dataToSend.mcp.brightness = 5;
 	}
-	
-	dataToSend.mcp.backlight = state->LTS_MainPanelKnob[0];
-	dataToSend.mip.backlight = state->LTS_MainPanelKnob[0];
-
-	dataToSend.mip.flaps = getGaugeValue(state->MAIN_TEFlapsNeedle[0]);
-
-	dataToSend.mip.leds[0] =
-		setBit(LED_RGEAR_GRN, state->MAIN_annunGEAR_locked[0]) |
-		setBit(LED_RGEAR_RED, state->MAIN_annunGEAR_transit[0]) |
-		setBit(LED_NGEAR_GRN, state->MAIN_annunGEAR_locked[1]) |
-		setBit(LED_NGEAR_RED, state->MAIN_annunGEAR_transit[1]) |
-		setBit(LED_LGEAR_GRN, state->MAIN_annunGEAR_locked[2]) |
-		setBit(LED_LGEAR_RED, state->MAIN_annunGEAR_transit[2]);
-
-	dataToSend.mip.leds[1] =
-		setBit(LED_ANTISKID_INOP, state->MAIN_annunANTI_SKID_INOP) |
-		setBit(LED_AUTOBREAK_DISARM, state->MAIN_annunAUTO_BRAKE_DISARM) |
-		setBit(LED_FLAPS_EXT, state->MAIN_annunLE_FLAPS_EXT) |
-		setBit(LED_FLAPS_TRANS, state->MAIN_annunLE_FLAPS_TRANSIT) |
-		setBit(LED_STAB_OUTOF_TRIM, state->MAIN_annunSTAB_OUT_OF_TRIM);
-
-	dataToSend.mip.leds[2] =
-		setBit(LED_AP_RED, state->MAIN_annunAP[0]) |
-		setBit(LED_AT_RED, state->MAIN_annunAT[0]) |
-		setBit(LED_FMC_YEL, state->MAIN_annunFMC[0]) |
-		setBit(LED_AP_YEL, state->MAIN_annunAP_Amber[0]) |
-		setBit(LED_AT_YEL, state->MAIN_annunAT_Amber[0]) |
-		setBit(LED_SPEEDBRAKE_NOTARM, state->MAIN_annunSPEEDBRAKE_DO_NOT_ARM) |
-		setBit(LED_SPEEDBRAKE_ARMED, state->MAIN_annunSPEEDBRAKE_ARMED) |
-		setBit(LED_BELOW_GS, state->MAIN_annunBELOW_GS[0]);
-
-	dataToSend.mip.warnLeds =
-		setBit(LED_MSTR_CAUTION, state->WARN_annunMASTER_CAUTION[0]) |
-		setBit(LED_FIRE_WARNING, state->WARN_annunFIRE_WARN[0]) |
-		setBit(LED_WARN_FLTCONT, state->WARN_annunFLT_CONT) |
-		setBit(LED_WARN_ELEC, state->WARN_annunELEC) |
-		setBit(LED_WARN_IRS, state->WARN_annunIRS) |
-		setBit(LED_WARN_APU, state->WARN_annunAPU) |
-		setBit(LED_WARN_FUEL, state->WARN_annunFUEL) |
-		setBit(LED_WARN_OVHT, state->WARN_annunOVHT_DET);
 
 	mip.sendData(&dataToSend.mip);
 	mcp.sendData(&dataToSend.mcp);
@@ -364,9 +370,7 @@ NGX_Control* getControlData() {
 				break;
 		}
 
-		unsigned char hi = dataReceived.mcp.buttons >> 8;
-		unsigned char lo = dataReceived.mcp.buttons & 0xFF;
-		ctrl.mcpButtons = ~(reverseByte(hi) << 8 | reverseByte(lo));
+		ctrl.mcpButtons = dataReceived.mcp.buttons;
 
 		result = &ctrl;
 	}

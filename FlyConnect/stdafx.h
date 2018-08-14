@@ -11,6 +11,5 @@
 #include <tchar.h>
 
 // TODO: reference additional headers your program requires here
-#include <math.h>
 #include <windows.h>
-#include <strsafe.h>
+#include <math.h>
