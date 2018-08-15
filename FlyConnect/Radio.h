@@ -77,6 +77,18 @@ private:
 			memcpy(&prevData, &currData, sizeof(cdu_data_t));
 		}
 	}
+
+	void sendToggleEvent(HANDLE hSimConnect, EVENT_ID evt) {
+		SimConnect_TransmitClientEvent(hSimConnect, 0, evt, 0, SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+	}
+
+	void sendLinearIncDecEvent(HANDLE hSimConnect, char value, EVENT_ID inc, EVENT_ID dec) {
+		if (value > 0)
+			SimConnect_TransmitClientEvent(hSimConnect, 0, inc, 0, SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+
+		if (value < 0)
+			SimConnect_TransmitClientEvent(hSimConnect, 0, dec, 0, SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+	}
 public:
 	void connect(LPCWSTR path) {
 		printf("Radio panel connecting...\n");

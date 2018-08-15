@@ -1,4 +1,5 @@
 #include <map>
+#include "PMDG_NGX_SDK.h"
 
 enum DATA_REQUEST_ID {
 	DATA_REQUEST,

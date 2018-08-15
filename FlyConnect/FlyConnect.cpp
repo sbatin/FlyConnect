@@ -2,14 +2,14 @@
 //
 
 #include "stdafx.h"
-#include "PMDG_NGX_SDK.h"
 #include "Panel.h"
-#include "SimConnect.h"
 #include "Events.h"
+#include "SimConnect.h"
 #include "Radio.h"
 #include "Joystick.h"
-#include "PMDGWrapper.h"
+#include "NgxInterface.h"
 
+Panel panel = Panel();
 HANDLE hSimConnect = NULL;
 
 void CALLBACK MyDispatchProc(SIMCONNECT_RECV* pData, DWORD cbData, void *pContext) {
@@ -69,6 +69,90 @@ DWORD WINAPI PollForData(LPVOID lpParam) {
 	return 0;
 }
 
+void sendNGX_PanelState(PMDG_NGX_Data* state) {
+	auto seconds = time(NULL);
+
+	if (state->ELEC_BatSelector) {
+		DisplayState IASState = Blank;
+
+		if (!state->MCP_IASBlank) {
+			if (state->MCP_IASOverspeedFlash && seconds % 2 == 0) {
+				IASState = Overspeed;
+			} else if (state->MCP_IASUnderspeedFlash && seconds % 2 == 0) {
+				IASState = Underspeed;
+			} else {
+				IASState = Enabled;
+			}
+		}
+
+		panel.setMCPDisplays(state->MCP_Course[0], state->MCP_IASMach, IASState, state->MCP_Heading, state->MCP_Altitude, state->MCP_VertSpeed, !state->MCP_VertSpeedBlank, state->MCP_Course[1]);
+	} else {
+		panel.mcpData.speedCrsL = DISP_OFF_MASK;
+		panel.mcpData.vspeedCrsR = DISP_OFF_MASK;
+		panel.mcpData.altitudeHdg = DISP_OFF_MASK;
+	}
+
+	panel.mcpData.alt_hld = state->MCP_annunALT_HOLD;
+	panel.mcpData.app = state->MCP_annunAPP;
+	panel.mcpData.at_arm = state->MCP_ATArmSw;
+	panel.mcpData.cmd_a = state->MCP_annunCMD_A;
+	panel.mcpData.cmd_b = state->MCP_annunCMD_B;
+	panel.mcpData.fd_ca = state->MCP_annunFD[0];
+	panel.mcpData.fd_fo = state->MCP_annunFD[1];
+	panel.mcpData.hdg_sel = state->MCP_annunHDG_SEL;
+	panel.mcpData.lnav = state->MCP_annunLNAV;
+	panel.mcpData.lvl_chg = state->MCP_annunLVL_CHG;
+	panel.mcpData.n1 = state->MCP_annunN1;
+	panel.mcpData.speed = state->MCP_annunSPEED;
+	panel.mcpData.vnav = state->MCP_annunVNAV;
+	panel.mcpData.vor_loc = state->MCP_annunVOR_LOC;
+	panel.mcpData.vs = state->MCP_annunVS;
+
+	panel.mcpData.backlight = state->LTS_MainPanelKnob[0];
+	panel.mipData.backlight = state->LTS_MainPanelKnob[0];
+	panel.mipData.flaps = getGaugeValue(state->MAIN_TEFlapsNeedle[0]);
+	panel.mipData.annunNGearGrn = state->MAIN_annunGEAR_locked[1];
+	panel.mipData.annunNGearRed = state->MAIN_annunGEAR_transit[1];
+	panel.mipData.annunRGearGrn = state->MAIN_annunGEAR_locked[0];
+	panel.mipData.annunRGearRed = state->MAIN_annunGEAR_transit[0];
+	panel.mipData.annunLGearGrn = state->MAIN_annunGEAR_locked[2];
+	panel.mipData.annunLGearRed = state->MAIN_annunGEAR_transit[2];
+	panel.mipData.annunAntiskidInop = state->MAIN_annunANTI_SKID_INOP;
+	panel.mipData.annunAutobreakDisarm = state->MAIN_annunAUTO_BRAKE_DISARM;
+	panel.mipData.annunFlapsExt = state->MAIN_annunLE_FLAPS_EXT;
+	panel.mipData.annunFlapsTransit = state->MAIN_annunLE_FLAPS_TRANSIT;
+	panel.mipData.annunStabOutOfTrim = state->MAIN_annunSTAB_OUT_OF_TRIM;
+	panel.mipData.annunAPRstRed = state->MAIN_annunAP[0];
+	panel.mipData.annunAPRstYel = state->MAIN_annunAP_Amber[0];
+	panel.mipData.annunATRstRed = state->MAIN_annunAT[0];
+	panel.mipData.annunATRstYel = state->MAIN_annunAT_Amber[0];
+	panel.mipData.annunFMCRstYel = state->MAIN_annunFMC[0];
+	panel.mipData.annunSpeedbrakeArmed = state->MAIN_annunSPEEDBRAKE_ARMED;
+	panel.mipData.annunSpeedbrakNotArm = state->MAIN_annunSPEEDBRAKE_DO_NOT_ARM;
+	panel.mipData.annunBelowGS = state->MAIN_annunBELOW_GS[0];
+	panel.mipData.annunFireWarning = state->WARN_annunFIRE_WARN[0];
+	panel.mipData.annunMasterCaution = state->WARN_annunMASTER_CAUTION[0];
+	panel.mipData.annunWarnFltCont = state->WARN_annunFLT_CONT;
+	panel.mipData.annunWarnElec = state->WARN_annunELEC;
+	panel.mipData.annunWarnIRS = state->WARN_annunIRS;
+	panel.mipData.annunWarnAPU = state->WARN_annunAPU;
+	panel.mipData.annunWarnFuel = state->WARN_annunFUEL;
+	panel.mipData.annunWarnOvht = state->WARN_annunOVHT_DET;
+
+	// test
+	if (state->MAIN_LightsSelector == 0) {
+		panel.lightsTest();
+		// bright
+	} else if (state->MAIN_LightsSelector == 1) {
+		panel.mcpData.brightness = 8;
+		// dim
+	} else if (state->MAIN_LightsSelector == 2) {
+		panel.mcpData.brightness = 5;
+	}
+
+	panel.send();
+}
+
 void run() {
 	HRESULT hr = SimConnect_Open(&hSimConnect, "PMDGWrapper", NULL, 0, 0, 0);
 
@@ -88,67 +172,78 @@ void run() {
 		radio.sendControlData(hSimConnect);
 		//SimConnect_RequestDataOnSimObjectType(hSimConnect, RADIO_REQUEST, RADIO_DEF, 0, SIMCONNECT_SIMOBJECT_TYPE_USER);
 
-		void* ptr = getControlData();
+		if (panel.read()) {
+			auto mcpInput = &panel.input.mcp;
+			auto mipInput = &panel.input.mip;
 
-		if (ptr != NULL) {
-			NGX_Control* ctrl = (NGX_Control*)ptr;
+			switch (mcpInput->encoder) {
+				case MCP_ALTITUDE:
+					ngx->adjust(EVENT_ALTITUDE_SELECTOR, mcpInput->value);
+					break;
+				case MCP_HEADING:
+					ngx->adjust(EVENT_HEADING_SELECTOR, mcpInput->value);
+					break;
+				case MCP_IAS_MACH:
+					ngx->adjust(EVENT_SPEED_SELECTOR, mcpInput->value);
+					break;
+				case MCP_COURSE_CA:
+					ngx->adjust(EVENT_COURSE_SELECTOR_L, mcpInput->value);
+					break;
+				case MCP_COURSE_FO:
+					ngx->adjust(EVENT_COURSE_SELECTOR_R, mcpInput->value);
+					break;
+			}
 
-			ngx->adjust(EVENT_SPEED_SELECTOR, ctrl->airspeed);
-			ngx->adjust(EVENT_HEADING_SELECTOR, ctrl->heading);
-			ngx->adjust(EVENT_ALTITUDE_SELECTOR, ctrl->altitude);
-			ngx->adjust(EVENT_COURSE_SELECTOR_L, ctrl->courseL);
-			ngx->adjust(EVENT_COURSE_SELECTOR_R, ctrl->courseR);
-			ngx->adjust(EVENT_BARO_SELECTOR_L, ctrl->efisBaro);
-			ngx->adjust(EVENT_MINS_SELECTOR_L, ctrl->efisMins);
+			if (mcpInput->fd_ca != ngx->data.MCP_FDSw[0]) ngx->send(EVT_MCP_FD_SWITCH_L, mcpInput->fd_ca ? 0 : 1);
+			if (mcpInput->fd_fo != ngx->data.MCP_FDSw[1]) ngx->send(EVT_MCP_FD_SWITCH_R, mcpInput->fd_fo ? 0 : 1);
+			if (mcpInput->at_arm != ngx->data.MCP_ATArmSw) ngx->send(EVT_MCP_AT_ARM_SWITCH, mcpInput->at_arm ? 0 : 1);
+			ngx->pressButton(EVT_MCP_SPEED_SWITCH, mcpInput->speed);
+			ngx->pressButton(EVT_MCP_VNAV_SWITCH, mcpInput->vnav);
+			ngx->pressButton(EVT_MCP_LVL_CHG_SWITCH, mcpInput->lvl_chg);
+			ngx->pressButton(EVT_MCP_HDG_SEL_SWITCH, mcpInput->hdg_sel);
+			ngx->pressButton(EVT_MCP_LNAV_SWITCH, mcpInput->lnav);
+			ngx->pressButton(EVT_MCP_VOR_LOC_SWITCH, mcpInput->vor_loc);
+			ngx->pressButton(EVT_MCP_APP_SWITCH, mcpInput->app);
+			ngx->pressButton(EVT_MCP_ALT_HOLD_SWITCH, mcpInput->alt_hld);
+			ngx->pressButton(EVT_MCP_CMD_A_SWITCH, mcpInput->cmd_a);
+			ngx->pressButton(EVT_MCP_CMD_B_SWITCH, mcpInput->cmd_b);
+			ngx->pressButton(EVT_MCP_VS_SWITCH, mcpInput->vs);
 
 			// MIP
-			ngx->pressButton(EVT_MPM_MFD_ENG_BUTTON, ctrl->mipButtons & BTN_MFD_ENG);
-			ngx->pressButton(EVT_MPM_MFD_SYS_BUTTON, ctrl->mipButtons & BTN_MFD_SYS);
-			ngx->pressButton(EVT_DSP_CPT_AP_RESET_SWITCH, ctrl->mipButtons & BTN_AP_RST);
-			ngx->pressButton(EVT_DSP_CPT_AT_RESET_SWITCH, ctrl->mipButtons & BTN_AT_RST);
-			ngx->pressButton(EVT_DSP_CPT_FMC_RESET_SWITCH, ctrl->mipButtons & BTN_FMC_RST);
-			ngx->send(EVT_MPM_AUTOBRAKE_SELECTOR, ctrl->autoBreak, ngx->data.MAIN_AutobrakeSelector);
-			ngx->send(EVT_EFIS_CPT_VOR_ADF_SELECTOR_L, ctrl->vorAdfSel1, ngx->data.EFIS_VORADFSel1[0]);
-			ngx->send(EVT_EFIS_CPT_VOR_ADF_SELECTOR_R, ctrl->vorAdfSel2, ngx->data.EFIS_VORADFSel2[0]);
-			ngx->send(EVT_DSP_CPT_MASTER_LIGHTS_SWITCH, ctrl->mainLights, ngx->data.MAIN_LightsSelector);
-			ngx->send(EVT_DSP_CPT_DISENGAGE_TEST_SWITCH, ctrl->disengageLights, ngx->data.MAIN_DisengageTestSelector[0]);
-			ngx->send(EVT_MPM_FUEL_FLOW_SWITCH, ctrl->fuelFlowSw, ngx->data.MAIN_FuelFlowSelector);
-			ngx->send(EVT_DSP_CPT_MAIN_DU_SELECTOR, ctrl->mainPanelDuSel, ngx->data.MAIN_MainPanelDUSel[0]);
-			ngx->send(EVT_DSP_CPT_LOWER_DU_SELECTOR, ctrl->loweDuSel, ngx->data.MAIN_LowerDUSel[0]);
-			ngx->pressButton(EVT_MASTER_CAUTION_LIGHT_LEFT, ctrl->mipButtons & BTN_MSTR_CAUTION);
-			ngx->pressButton(EVT_FIRE_WARN_LIGHT_LEFT, ctrl->mipButtons & BTN_FIRW_WARNING);
-			ngx->pressButton(EVT_SYSTEM_ANNUNCIATOR_PANEL_LEFT, ctrl->mipButtons & BTN_WARN_RECALL);
+			ngx->pressButton(EVT_MPM_MFD_ENG_BUTTON, mipInput->mipButtons & BTN_MFD_ENG);
+			ngx->pressButton(EVT_MPM_MFD_SYS_BUTTON, mipInput->mipButtons & BTN_MFD_SYS);
+			ngx->pressButton(EVT_DSP_CPT_AP_RESET_SWITCH, mipInput->mipButtons & BTN_AP_RST);
+			ngx->pressButton(EVT_DSP_CPT_AT_RESET_SWITCH, mipInput->mipButtons & BTN_AT_RST);
+			ngx->pressButton(EVT_DSP_CPT_FMC_RESET_SWITCH, mipInput->mipButtons & BTN_FMC_RST);
+			ngx->send(EVT_MPM_AUTOBRAKE_SELECTOR, panel.input.autoBreak, ngx->data.MAIN_AutobrakeSelector);
+			ngx->send(EVT_EFIS_CPT_VOR_ADF_SELECTOR_L, panel.input.vorAdfSel1, ngx->data.EFIS_VORADFSel1[0]);
+			ngx->send(EVT_EFIS_CPT_VOR_ADF_SELECTOR_R, panel.input.vorAdfSel2, ngx->data.EFIS_VORADFSel2[0]);
+			ngx->send(EVT_DSP_CPT_MASTER_LIGHTS_SWITCH, panel.input.mainLights, ngx->data.MAIN_LightsSelector);
+			ngx->send(EVT_DSP_CPT_DISENGAGE_TEST_SWITCH, panel.input.disengageLights, ngx->data.MAIN_DisengageTestSelector[0]);
+			ngx->send(EVT_MPM_FUEL_FLOW_SWITCH, panel.input.fuelFlowSw, ngx->data.MAIN_FuelFlowSelector);
+			ngx->send(EVT_DSP_CPT_MAIN_DU_SELECTOR, panel.input.mainPanelDuSel, ngx->data.MAIN_MainPanelDUSel[0]);
+			ngx->send(EVT_DSP_CPT_LOWER_DU_SELECTOR, panel.input.loweDuSel, ngx->data.MAIN_LowerDUSel[0]);
+			ngx->pressButton(EVT_MASTER_CAUTION_LIGHT_LEFT, mipInput->mipButtons & BTN_MSTR_CAUTION);
+			ngx->pressButton(EVT_FIRE_WARN_LIGHT_LEFT, mipInput->mipButtons & BTN_FIRW_WARNING);
+			ngx->pressButton(EVT_SYSTEM_ANNUNCIATOR_PANEL_LEFT, mipInput->mipButtons & BTN_WARN_RECALL);
 
-			// MCP
-			if (((ctrl->mcpButtons & BTN_FD_LFT) != 0) != ngx->data.MCP_FDSw[0]) ngx->send(EVT_MCP_FD_SWITCH_L, ctrl->mcpButtons & BTN_FD_LFT ? 0 : 1);
-			if (((ctrl->mcpButtons & BTN_FD_RGH) != 0) != ngx->data.MCP_FDSw[1]) ngx->send(EVT_MCP_FD_SWITCH_R, ctrl->mcpButtons & BTN_FD_RGH ? 0 : 1);
-			if (((ctrl->mcpButtons & BTN_ATARM) != 0) != ngx->data.MCP_ATArmSw) ngx->send(EVT_MCP_AT_ARM_SWITCH, ctrl->mcpButtons & BTN_ATARM ? 0 : 1);
-			ngx->pressButton(EVT_MCP_SPEED_SWITCH, ctrl->mcpButtons & BTN_SPEED);
-			ngx->pressButton(EVT_MCP_VNAV_SWITCH, ctrl->mcpButtons & BTN_VNAV);
-			ngx->pressButton(EVT_MCP_LVL_CHG_SWITCH, ctrl->mcpButtons & BTN_LVLCHG);
-			ngx->pressButton(EVT_MCP_HDG_SEL_SWITCH, ctrl->mcpButtons & BTN_HDGSEL);
-			ngx->pressButton(EVT_MCP_LNAV_SWITCH, ctrl->mcpButtons & BTN_LNAV);
-			ngx->pressButton(EVT_MCP_VOR_LOC_SWITCH, ctrl->mcpButtons & BTN_VORLOC);
-			ngx->pressButton(EVT_MCP_APP_SWITCH, ctrl->mcpButtons & BTN_APP);
-			ngx->pressButton(EVT_MCP_ALT_HOLD_SWITCH, ctrl->mcpButtons & BTN_ALTHLD);
-			ngx->pressButton(EVT_MCP_CMD_A_SWITCH, ctrl->mcpButtons & BTN_CMDA);
-			ngx->pressButton(EVT_MCP_CMD_B_SWITCH, ctrl->mcpButtons & BTN_CMDB);
-			ngx->pressButton(EVT_MCP_VS_SWITCH, ctrl->mcpButtons & BTN_VS);
 			// EFIS
-			ngx->send(EVT_EFIS_CPT_MODE, ctrl->efisMode, ngx->data.EFIS_ModeSel[0]);
-			ngx->send(EVT_EFIS_CPT_RANGE, ctrl->efisRange, ngx->data.EFIS_RangeSel[0]);
-			ngx->pressButton(EVT_EFIS_CPT_WXR, ctrl->efisButtons & EFIS_WXR);
-			ngx->pressButton(EVT_EFIS_CPT_STA, ctrl->efisButtons & EFIS_STA);
-			ngx->pressButton(EVT_EFIS_CPT_WPT, ctrl->efisButtons & EFIS_WPT);
-			ngx->pressButton(EVT_EFIS_CPT_ARPT, ctrl->efisButtons & EFIS_ARPT);
-			ngx->pressButton(EVT_EFIS_CPT_DATA, ctrl->efisButtons & EFIS_DATA);
-			ngx->pressButton(EVT_EFIS_CPT_POS, ctrl->efisButtons & EFIS_POS);
-			ngx->pressButton(EVT_EFIS_CPT_TERR, ctrl->efisButtons & EFIS_TERR);
-			ngx->pressButton(EVT_EFIS_CPT_WXR, ctrl->efisButtons & EFIS_WXR);
-			ngx->pressButton(EVT_EFIS_CPT_FPV, ctrl->efisButtons & EFIS_FPV);
-			ngx->pressButton(EVT_EFIS_CPT_MTRS, ctrl->efisButtons & EFIS_MTRS);
-			ngx->pressButton(EVT_EFIS_CPT_BARO_STD, ctrl->efisButtons & EFIS_STD);
-			ngx->pressButton(EVT_EFIS_CPT_MINIMUMS_RST, ctrl->efisButtons & EFIS_RST);
+			ngx->adjust(EVENT_BARO_SELECTOR_L, mipInput->baro);
+			ngx->adjust(EVENT_MINS_SELECTOR_L, mipInput->mins);
+			ngx->send(EVT_EFIS_CPT_MODE, panel.input.efisMode, ngx->data.EFIS_ModeSel[0]);
+			ngx->send(EVT_EFIS_CPT_RANGE, panel.input.efisRange, ngx->data.EFIS_RangeSel[0]);
+			ngx->pressButton(EVT_EFIS_CPT_WXR, mipInput->efisButtons & EFIS_WXR);
+			ngx->pressButton(EVT_EFIS_CPT_STA, mipInput->efisButtons & EFIS_STA);
+			ngx->pressButton(EVT_EFIS_CPT_WPT, mipInput->efisButtons & EFIS_WPT);
+			ngx->pressButton(EVT_EFIS_CPT_ARPT, mipInput->efisButtons & EFIS_ARPT);
+			ngx->pressButton(EVT_EFIS_CPT_DATA, mipInput->efisButtons & EFIS_DATA);
+			ngx->pressButton(EVT_EFIS_CPT_POS, mipInput->efisButtons & EFIS_POS);
+			ngx->pressButton(EVT_EFIS_CPT_TERR, mipInput->efisButtons & EFIS_TERR);
+			ngx->pressButton(EVT_EFIS_CPT_WXR, mipInput->efisButtons & EFIS_WXR);
+			ngx->pressButton(EVT_EFIS_CPT_FPV, mipInput->efisButtons & EFIS_FPV);
+			ngx->pressButton(EVT_EFIS_CPT_MTRS, mipInput->efisButtons & EFIS_MTRS);
+			ngx->pressButton(EVT_EFIS_CPT_BARO_STD, mipInput->efisButtons & EFIS_STD);
+			ngx->pressButton(EVT_EFIS_CPT_MINIMUMS_RST, mipInput->efisButtons & EFIS_RST);
 		}
 
 		Sleep(50);
@@ -162,69 +257,46 @@ void lab() {
 	unsigned short value = 0;
 
 	while (1) {
-		void * ptr = getControlData();
-
-		if (ptr != NULL) {
-			NGX_Control* ctrl = (NGX_Control*)ptr;
-			printf(">>> Control received, CourseL = %d, Autobreak = %d, EFIS = %d\n", ctrl->courseL, ctrl->autoBreak, (ctrl->efisButtons & EFIS_DATA));
-			printf("EFIS Range = %d, EFIS Mode = %d\n", ctrl->efisRange, ctrl->efisMode);
-			value += ctrl->airspeed;
+		if (panel.read()) {
+			auto ctrl = &panel.input;
+			printf(">>> Control received, Autobreak = %d, EFIS Range = %d, EFIS Mode = %d\n", ctrl->autoBreak, ctrl->efisRange, ctrl->efisMode);
 
 			int i;
-			for (i = 0; i < 16; i++) {
-				if (dataReceived.mcp.buttons & (1 << i)) break;
-			}
-			printf("mcp buttons %x, bit %d\n", dataReceived.mcp.buttons, i);
 
-			unsigned long b = dataReceived.mip.mipButtons;
 			for (i = 0; i < 32; i++) {
-				if (b == (unsigned long)(~(1 << i))) break;
+				if (ctrl->mip.mipButtons & (1 << i)) break;
 			}
-			printf("mip buttons %x, bit %d\n", b, i);
+			printf("mip buttons %x, bit %d\n", ctrl->mip.mipButtons, i);
 
-			unsigned long e = dataReceived.mip.efisButtons;
-			unsigned long pat = 0xfff7fff3;
 			for (i = 0; i < 32; i++) {
-				if (e == (pat & ~(1 << i))) break;
+				if (ctrl->mip.efisButtons & (1 << i)) break;
 			}
-			printf("efis buttons %x, bit %d\n", e, i);
+			printf("efis buttons %x, bit %d\n", ctrl->mip.efisButtons, i);
 		}
 
 		time_t seconds = time(NULL);
 
-		dataToSend.mcp.buttons = (1 << counter1);
-		dataToSend.mip.flaps = getGaugeValue(value);
+		panel.mipData.flaps = getGaugeValue(value);
 		int mask = seconds % 2 ? 0xFFFFAFFF : 0xFFFFFFFF;
-		dataToSend.mcp.speedCrsL = displayHi(value) & mask & displayLo((float)0.78);
-		dataToSend.mcp.vspeedCrsR = 0xDEFFFFFF & displayLo(-1000);
-		dataToSend.mcp.altitudeHdg = displayHi(counter1) & displayLo(getGaugeValue(value));
-		dataToSend.mip.backlight = value * 5;
-		dataToSend.mcp.backlight = value * 5;
-		mcp.sendData(&dataToSend.mcp);
-		mip.sendData(&dataToSend.mip);
+		panel.mcpData.speedCrsL = displayHi(value) & mask & displayLo((float)0.78);
+		panel.mcpData.vspeedCrsR = 0xDEFFFFFF & displayLo(-1000);
+		panel.mcpData.altitudeHdg = displayHi(counter1) & displayLo(getGaugeValue(value));
+		panel.mcpData.backlight = value * 5;
+		panel.mcpData.backlight = value * 5;
+		panel.send();
 		counter1++;
 		counter2++;
 		if (counter1 == 16) counter1 = 0;
 		if (counter2 == 8) counter2 = 0;
-		Sleep(500);
+		Sleep(100);
 	}
 }
 
-void connect(SerialPort* port, const wchar_t* path, const char* name) {
-	printf("%s connecting...\n", name);
-	if (port->connect(path)) {
-		char *message = port->readMessage();
-		printf("%s connected: %s\n", name, message);
-	}
-}
-
-int _tmain(int argc, _TCHAR* argv[]) {
-	connect(&mcp, L"COM5", "MCP");
-	connect(&mip, L"COM6", "MIP");
+int main() {
+	panel.connect(L"COM5", L"COM6");
 	//lab();
 	run();
-	mip.close();
-	mcp.close();
+	panel.disconnect();
 	Sleep(1000);
 	return 0;
 }

@@ -21,34 +21,22 @@
     <ClInclude Include="targetver.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Display.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Events.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Helpers.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Joystick.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Panel.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="PMDG_NGX_SDK.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="PMDGWrapper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Radio.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SerialPort.h">
+    <ClInclude Include="SimConnect.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SimConnect.h">
+    <ClInclude Include="NgxInterface.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
