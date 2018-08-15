@@ -42,8 +42,8 @@ unsigned short getGaugeValue(float flapsValue) {
 
 template <typename T>
 static unsigned char toButtonState(T buttonsState, T mask0, T mask2) {
-	if ((buttonsState & mask0) == 0) return 0;
-	if ((buttonsState & mask2) == 0) return 2;
+	if (buttonsState & mask0) return 0;
+	if (buttonsState & mask2) return 2;
 	return 1;
 }
 
@@ -87,92 +87,92 @@ struct PanelInput {
 
 class Panel {
 private:
-	SerialPort mip;
-	SerialPort mcp;
+	SerialPort mipPort;
+	SerialPort mcpPort;
 public:
-	struct mcp_data_t mcpData;
-	struct mip_data_t mipData;
+	struct mcp_data_t mcp;
+	struct mip_data_t mip;
 	struct PanelInput input;
 
 	Panel(void) {};
 	~Panel(void) {};
 
-	void connect(const wchar_t* mcpPort, const wchar_t* mipPort) {
-		connectPort(&mcp, mcpPort, "MCP");
-		connectPort(&mip, mipPort, "MIP");
+	void connect(const wchar_t* mcpPortPath, const wchar_t* mipPortPath) {
+		connectPort(&mcpPort, mcpPortPath, "MCP");
+		connectPort(&mipPort, mipPortPath, "MIP");
 	}
 
 	void disconnect() {
-		mip.close();
-		mcp.close();
+		mipPort.close();
+		mcpPort.close();
 	}
 
 	void lightsTest() {
 		auto seconds = time(NULL);
 
-		mcpData.speedCrsL = seconds % 3 == 0 ? 0x888F8888 : DISP_OFF_MASK;
-		mcpData.vspeedCrsR = seconds % 3 == 0 ? 0x888C8880 : DISP_OFF_MASK;
-		mcpData.altitudeHdg = seconds % 3 == 0 ? 0x88888880 : DISP_OFF_MASK;
-		mcpData.alt_hld = 1;
-		mcpData.app = 1;
-		mcpData.at_arm = 1;
-		mcpData.cmd_a = 1;
-		mcpData.cmd_b = 1;
-		mcpData.fd_ca = 1;
-		mcpData.fd_fo = 1;
-		mcpData.hdg_sel = 1;
-		mcpData.lnav = 1;
-		mcpData.lvl_chg = 1;
-		mcpData.n1 = 1;
-		mcpData.speed = 1;
-		mcpData.vnav = 1;
-		mcpData.vor_loc = 1;
-		mcpData.vs = 1;
-		mipData.annunNGearGrn = 1;
-		mipData.annunNGearRed = 1;
-		mipData.annunRGearGrn = 1;
-		mipData.annunRGearRed = 1;
-		mipData.annunLGearGrn = 1;
-		mipData.annunLGearRed = 1;
-		mipData.annunAntiskidInop = 1;
-		mipData.annunAutobreakDisarm = 1;
-		mipData.annunFlapsExt = 1;
-		mipData.annunFlapsTransit = 1;
-		mipData.annunStabOutOfTrim = 1;
-		mipData.annunBelowGS = 1;
-		mipData.annunSpeedbrakeArmed = 1;
-		mipData.annunSpeedbrakNotArm = 1;
+		mcp.speedCrsL = seconds % 3 == 0 ? 0x888F8888 : DISP_OFF_MASK;
+		mcp.vspeedCrsR = seconds % 3 == 0 ? 0x888C8880 : DISP_OFF_MASK;
+		mcp.altitudeHdg = seconds % 3 == 0 ? 0x88888880 : DISP_OFF_MASK;
+		mcp.alt_hld = 1;
+		mcp.app = 1;
+		mcp.at_arm = 1;
+		mcp.cmd_a = 1;
+		mcp.cmd_b = 1;
+		mcp.fd_ca = 1;
+		mcp.fd_fo = 1;
+		mcp.hdg_sel = 1;
+		mcp.lnav = 1;
+		mcp.lvl_chg = 1;
+		mcp.n1 = 1;
+		mcp.speed = 1;
+		mcp.vnav = 1;
+		mcp.vor_loc = 1;
+		mcp.vs = 1;
+		mip.annunNGearGrn = 1;
+		mip.annunNGearRed = 1;
+		mip.annunRGearGrn = 1;
+		mip.annunRGearRed = 1;
+		mip.annunLGearGrn = 1;
+		mip.annunLGearRed = 1;
+		mip.annunAntiskidInop = 1;
+		mip.annunAutobreakDisarm = 1;
+		mip.annunFlapsExt = 1;
+		mip.annunFlapsTransit = 1;
+		mip.annunStabOutOfTrim = 1;
+		mip.annunBelowGS = 1;
+		mip.annunSpeedbrakeArmed = 1;
+		mip.annunSpeedbrakNotArm = 1;
 	}
 
 	void setMCPDisplays(unsigned short courseL, float IASKtsMach, DisplayState IASState, unsigned short heading, unsigned short altitude, short vertSpeed, bool vsEnabled, unsigned short courseR) {
-		mcpData.speedCrsL = displayHi(courseL);
-		mcpData.vspeedCrsR = displayHi(courseR);
-		mcpData.altitudeHdg = displayHi(heading) & displayLo(altitude);
+		mcp.speedCrsL = displayHi(courseL);
+		mcp.vspeedCrsR = displayHi(courseR);
+		mcp.altitudeHdg = displayHi(heading) & displayLo(altitude);
 
 		if (IASState != Blank) {
 			if (IASState == Overspeed) {
-				mcpData.speedCrsL &= 0xFFFFBFFF;
+				mcp.speedCrsL &= 0xFFFFBFFF;
 			}
 
 			if (IASState == Underspeed) {
-				mcpData.speedCrsL &= 0xFFFFAFFF;
+				mcp.speedCrsL &= 0xFFFFAFFF;
 			}
 
 			if (IASKtsMach < 10) {
-				mcpData.speedCrsL &= displayLo(IASKtsMach);
+				mcp.speedCrsL &= displayLo(IASKtsMach);
 			} else {
-				mcpData.speedCrsL &= displayLo((int)IASKtsMach);
+				mcp.speedCrsL &= displayLo((int)IASKtsMach);
 			}
 		}
 
 		if (vsEnabled) {
-			mcpData.vspeedCrsR &= displayLo(vertSpeed, 0xFFFF0000);
+			mcp.vspeedCrsR &= displayLo(vertSpeed, 0xFFFF0000);
 		}
 	}
 
 	void send() {
-		mcp.sendData(&mcpData);
-		mip.sendData(&mipData);
+		mcpPort.sendData(&mcp);
+		mipPort.sendData(&mip);
 	}
 
 	bool read() {
@@ -182,12 +182,13 @@ public:
 		input.mip.mins = 0;
 		input.mip.mipButtons = 0;
 		input.mip.efisButtons = 0;
+		input.mcp.value = 0;
 
-		if (mcp.readData(&input.mcp)) {
+		if (mcpPort.readData(&input.mcp)) {
 			result = true;
 		}
 
-		if (mip.readData(&input.mip)) {
+		if (mipPort.readData(&input.mip)) {
 			if (input.mip.mipButtons & BTN_AB_RTO)
 				input.autoBreak = 0;
 			else if (input.mip.mipButtons & BTN_AB_1)

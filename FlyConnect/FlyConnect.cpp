@@ -87,67 +87,67 @@ void sendNGX_PanelState(PMDG_NGX_Data* state) {
 
 		panel.setMCPDisplays(state->MCP_Course[0], state->MCP_IASMach, IASState, state->MCP_Heading, state->MCP_Altitude, state->MCP_VertSpeed, !state->MCP_VertSpeedBlank, state->MCP_Course[1]);
 	} else {
-		panel.mcpData.speedCrsL = DISP_OFF_MASK;
-		panel.mcpData.vspeedCrsR = DISP_OFF_MASK;
-		panel.mcpData.altitudeHdg = DISP_OFF_MASK;
+		panel.mcp.speedCrsL = DISP_OFF_MASK;
+		panel.mcp.vspeedCrsR = DISP_OFF_MASK;
+		panel.mcp.altitudeHdg = DISP_OFF_MASK;
 	}
 
-	panel.mcpData.alt_hld = state->MCP_annunALT_HOLD;
-	panel.mcpData.app = state->MCP_annunAPP;
-	panel.mcpData.at_arm = state->MCP_ATArmSw;
-	panel.mcpData.cmd_a = state->MCP_annunCMD_A;
-	panel.mcpData.cmd_b = state->MCP_annunCMD_B;
-	panel.mcpData.fd_ca = state->MCP_annunFD[0];
-	panel.mcpData.fd_fo = state->MCP_annunFD[1];
-	panel.mcpData.hdg_sel = state->MCP_annunHDG_SEL;
-	panel.mcpData.lnav = state->MCP_annunLNAV;
-	panel.mcpData.lvl_chg = state->MCP_annunLVL_CHG;
-	panel.mcpData.n1 = state->MCP_annunN1;
-	panel.mcpData.speed = state->MCP_annunSPEED;
-	panel.mcpData.vnav = state->MCP_annunVNAV;
-	panel.mcpData.vor_loc = state->MCP_annunVOR_LOC;
-	panel.mcpData.vs = state->MCP_annunVS;
+	panel.mcp.alt_hld = state->MCP_annunALT_HOLD;
+	panel.mcp.app = state->MCP_annunAPP;
+	panel.mcp.at_arm = state->MCP_ATArmSw;
+	panel.mcp.cmd_a = state->MCP_annunCMD_A;
+	panel.mcp.cmd_b = state->MCP_annunCMD_B;
+	panel.mcp.fd_ca = state->MCP_annunFD[0];
+	panel.mcp.fd_fo = state->MCP_annunFD[1];
+	panel.mcp.hdg_sel = state->MCP_annunHDG_SEL;
+	panel.mcp.lnav = state->MCP_annunLNAV;
+	panel.mcp.lvl_chg = state->MCP_annunLVL_CHG;
+	panel.mcp.n1 = state->MCP_annunN1;
+	panel.mcp.speed = state->MCP_annunSPEED;
+	panel.mcp.vnav = state->MCP_annunVNAV;
+	panel.mcp.vor_loc = state->MCP_annunVOR_LOC;
+	panel.mcp.vs = state->MCP_annunVS;
 
-	panel.mcpData.backlight = state->LTS_MainPanelKnob[0];
-	panel.mipData.backlight = state->LTS_MainPanelKnob[0];
-	panel.mipData.flaps = getGaugeValue(state->MAIN_TEFlapsNeedle[0]);
-	panel.mipData.annunNGearGrn = state->MAIN_annunGEAR_locked[1];
-	panel.mipData.annunNGearRed = state->MAIN_annunGEAR_transit[1];
-	panel.mipData.annunRGearGrn = state->MAIN_annunGEAR_locked[0];
-	panel.mipData.annunRGearRed = state->MAIN_annunGEAR_transit[0];
-	panel.mipData.annunLGearGrn = state->MAIN_annunGEAR_locked[2];
-	panel.mipData.annunLGearRed = state->MAIN_annunGEAR_transit[2];
-	panel.mipData.annunAntiskidInop = state->MAIN_annunANTI_SKID_INOP;
-	panel.mipData.annunAutobreakDisarm = state->MAIN_annunAUTO_BRAKE_DISARM;
-	panel.mipData.annunFlapsExt = state->MAIN_annunLE_FLAPS_EXT;
-	panel.mipData.annunFlapsTransit = state->MAIN_annunLE_FLAPS_TRANSIT;
-	panel.mipData.annunStabOutOfTrim = state->MAIN_annunSTAB_OUT_OF_TRIM;
-	panel.mipData.annunAPRstRed = state->MAIN_annunAP[0];
-	panel.mipData.annunAPRstYel = state->MAIN_annunAP_Amber[0];
-	panel.mipData.annunATRstRed = state->MAIN_annunAT[0];
-	panel.mipData.annunATRstYel = state->MAIN_annunAT_Amber[0];
-	panel.mipData.annunFMCRstYel = state->MAIN_annunFMC[0];
-	panel.mipData.annunSpeedbrakeArmed = state->MAIN_annunSPEEDBRAKE_ARMED;
-	panel.mipData.annunSpeedbrakNotArm = state->MAIN_annunSPEEDBRAKE_DO_NOT_ARM;
-	panel.mipData.annunBelowGS = state->MAIN_annunBELOW_GS[0];
-	panel.mipData.annunFireWarning = state->WARN_annunFIRE_WARN[0];
-	panel.mipData.annunMasterCaution = state->WARN_annunMASTER_CAUTION[0];
-	panel.mipData.annunWarnFltCont = state->WARN_annunFLT_CONT;
-	panel.mipData.annunWarnElec = state->WARN_annunELEC;
-	panel.mipData.annunWarnIRS = state->WARN_annunIRS;
-	panel.mipData.annunWarnAPU = state->WARN_annunAPU;
-	panel.mipData.annunWarnFuel = state->WARN_annunFUEL;
-	panel.mipData.annunWarnOvht = state->WARN_annunOVHT_DET;
+	panel.mcp.backlight = state->LTS_MainPanelKnob[0];
+	panel.mip.backlight = state->LTS_MainPanelKnob[0];
+	panel.mip.flaps = getGaugeValue(state->MAIN_TEFlapsNeedle[0]);
+	panel.mip.annunNGearGrn = state->MAIN_annunGEAR_locked[1];
+	panel.mip.annunNGearRed = state->MAIN_annunGEAR_transit[1];
+	panel.mip.annunRGearGrn = state->MAIN_annunGEAR_locked[0];
+	panel.mip.annunRGearRed = state->MAIN_annunGEAR_transit[0];
+	panel.mip.annunLGearGrn = state->MAIN_annunGEAR_locked[2];
+	panel.mip.annunLGearRed = state->MAIN_annunGEAR_transit[2];
+	panel.mip.annunAntiskidInop = state->MAIN_annunANTI_SKID_INOP;
+	panel.mip.annunAutobreakDisarm = state->MAIN_annunAUTO_BRAKE_DISARM;
+	panel.mip.annunFlapsExt = state->MAIN_annunLE_FLAPS_EXT;
+	panel.mip.annunFlapsTransit = state->MAIN_annunLE_FLAPS_TRANSIT;
+	panel.mip.annunStabOutOfTrim = state->MAIN_annunSTAB_OUT_OF_TRIM;
+	panel.mip.annunAPRstRed = state->MAIN_annunAP[0];
+	panel.mip.annunAPRstYel = state->MAIN_annunAP_Amber[0];
+	panel.mip.annunATRstRed = state->MAIN_annunAT[0];
+	panel.mip.annunATRstYel = state->MAIN_annunAT_Amber[0];
+	panel.mip.annunFMCRstYel = state->MAIN_annunFMC[0];
+	panel.mip.annunSpeedbrakeArmed = state->MAIN_annunSPEEDBRAKE_ARMED;
+	panel.mip.annunSpeedbrakNotArm = state->MAIN_annunSPEEDBRAKE_DO_NOT_ARM;
+	panel.mip.annunBelowGS = state->MAIN_annunBELOW_GS[0];
+	panel.mip.annunFireWarning = state->WARN_annunFIRE_WARN[0];
+	panel.mip.annunMasterCaution = state->WARN_annunMASTER_CAUTION[0];
+	panel.mip.annunWarnFltCont = state->WARN_annunFLT_CONT;
+	panel.mip.annunWarnElec = state->WARN_annunELEC;
+	panel.mip.annunWarnIRS = state->WARN_annunIRS;
+	panel.mip.annunWarnAPU = state->WARN_annunAPU;
+	panel.mip.annunWarnFuel = state->WARN_annunFUEL;
+	panel.mip.annunWarnOvht = state->WARN_annunOVHT_DET;
 
 	// test
 	if (state->MAIN_LightsSelector == 0) {
 		panel.lightsTest();
 		// bright
 	} else if (state->MAIN_LightsSelector == 1) {
-		panel.mcpData.brightness = 8;
+		panel.mcp.brightness = 8;
 		// dim
 	} else if (state->MAIN_LightsSelector == 2) {
-		panel.mcpData.brightness = 5;
+		panel.mcp.brightness = 5;
 	}
 
 	panel.send();
@@ -276,13 +276,13 @@ void lab() {
 
 		time_t seconds = time(NULL);
 
-		panel.mipData.flaps = getGaugeValue(value);
+		panel.mip.flaps = getGaugeValue(value);
 		int mask = seconds % 2 ? 0xFFFFAFFF : 0xFFFFFFFF;
-		panel.mcpData.speedCrsL = displayHi(value) & mask & displayLo((float)0.78);
-		panel.mcpData.vspeedCrsR = 0xDEFFFFFF & displayLo(-1000);
-		panel.mcpData.altitudeHdg = displayHi(counter1) & displayLo(getGaugeValue(value));
-		panel.mcpData.backlight = value * 5;
-		panel.mcpData.backlight = value * 5;
+		panel.mcp.speedCrsL = displayHi(value) & mask & displayLo((float)0.78);
+		panel.mcp.vspeedCrsR = 0xDEFFFFFF & displayLo(-1000);
+		panel.mcp.altitudeHdg = displayHi(counter1) & displayLo(getGaugeValue(value));
+		panel.mcp.backlight = value * 5;
+		panel.mcp.backlight = value * 5;
 		panel.send();
 		counter1++;
 		counter2++;
