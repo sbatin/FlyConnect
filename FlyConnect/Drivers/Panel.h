@@ -47,14 +47,17 @@ static unsigned char toButtonState(T buttonsState, T mask0, T mask2) {
 	return 1;
 }
 
-template <typename T>
-static unsigned char decodeRotaryState(T buttonState, T mask, unsigned char maxValue) {
-	unsigned char result = 1;
+static unsigned char toSwitchState(bool v0, bool v2) {
+	if (v0) return 0;
+	if (v2) return 2;
+	return 1;
+}
 
-	while (result <= maxValue) {
-		if (buttonState & mask) return result;
-		result++;
-		mask = mask << 1;
+static unsigned char decodeRotaryState(unsigned char value) {
+	for (int i = 0; i < 8; i++) {
+		if (value & (1 << i)) {
+			return i + 1;
+		}
 	}
 
 	return 0;
@@ -80,9 +83,8 @@ struct PanelInput {
 	unsigned char disengageLights;
 	unsigned char fuelFlowSw;
 	unsigned char efisMode;
-	unsigned char efisRange;
-	unsigned char mainPanelDuSel;
-	unsigned char loweDuSel;
+	unsigned char mainPanelDU;
+	unsigned char lowerDU;
 };
 
 class Panel {
@@ -178,8 +180,8 @@ public:
 	bool read() {
 		bool result = false;
 
-		input.mip.baro = 0;
-		input.mip.mins = 0;
+		input.mip.efisBaro = 0;
+		input.mip.efisMins = 0;
 		input.mip.mipButtons = 0;
 		input.mip.efisButtons = 0;
 		input.mcp.value = 0;
@@ -203,22 +205,22 @@ public:
 				input.autoBreak = 1;
 
 			if (input.mip.mipButtons & BTN_MAIN_DU_OUTBD)
-				input.mainPanelDuSel = 0;
+				input.mainPanelDU = 0;
 			else if (input.mip.mipButtons & BTN_MAIN_DU_ENG)
-				input.mainPanelDuSel = 2;
+				input.mainPanelDU = 2;
 			else if (input.mip.mipButtons & BTN_MAIN_DU_PFD)
-				input.mainPanelDuSel = 3;
+				input.mainPanelDU = 3;
 			else if (input.mip.mipButtons & BTN_MAIN_DU_MFD)
-				input.mainPanelDuSel = 4;
+				input.mainPanelDU = 4;
 			else
-				input.mainPanelDuSel = 1;
+				input.mainPanelDU = 1;
 
 			if (input.mip.mipButtons & BTN_LOW_DU_ENG)
-				input.loweDuSel = 0;
+				input.lowerDU = 0;
 			else if (input.mip.mipButtons & BTN_LOW_DU_ND)
-				input.loweDuSel = 2;
+				input.lowerDU = 2;
 			else
-				input.loweDuSel = 1;
+				input.lowerDU = 1;
 
 			if (input.mip.efisButtons & EFIS_VOR)
 				input.efisMode = 1;
@@ -229,10 +231,10 @@ public:
 			else
 				input.efisMode = 0;
 
-			input.efisRange = decodeRotaryState<unsigned long>(input.mip.efisButtons, EFIS_10, 7);
+			input.mip.efisRange = decodeRotaryState(input.mip.efisRange);
+			input.vorAdfSel1 = toSwitchState(input.mip.efisVOR1, input.mip.efisADF1);
+			input.vorAdfSel2 = toSwitchState(input.mip.efisVOR2, input.mip.efisADF2);
 			input.fuelFlowSw = toButtonState<unsigned long>(input.mip.mipButtons, BTN_FF_RST, BTN_FF_USED);
-			input.vorAdfSel1 = toButtonState<unsigned long>(input.mip.efisButtons, EFIS_VOR1, EFIS_ADF1);
-			input.vorAdfSel2 = toButtonState<unsigned long>(input.mip.efisButtons, EFIS_VOR2, EFIS_ADF2);
 			input.mainLights = toButtonState<unsigned long>(input.mip.mipButtons, BTN_LS_TEST, BTN_LS_DIM);
 			input.disengageLights = toButtonState<unsigned long>(input.mip.mipButtons, BTN_TEST_1, BTN_TEST_2);
 

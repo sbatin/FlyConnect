@@ -27,66 +27,6 @@
 #define MCP_VERT_SPEED 4
 #define MCP_COURSE_FO  5
 
-/*
-*** MIP buttons mapping ***
-*/
-
-#define BTN_LOW_DU_ENG    (1 << 2)
-#define BTN_LOW_DU_ND     (1 << 3)
-#define BTN_MAIN_DU_MFD   (1 << 4)
-#define BTN_MAIN_DU_PFD   (1 << 5)
-#define BTN_MAIN_DU_ENG   (1 << 6)
-#define BTN_MAIN_DU_OUTBD (1 << 7)
-#define BTN_WARN_RECALL   (1 << 13)
-#define BTN_MSTR_CAUTION  (1 << 14)
-#define BTN_FIRW_WARNING  (1 << 15)
-#define BTN_LS_DIM        (1 << 16)
-#define BTN_LS_TEST       (1 << 17)
-#define BTN_TEST_2        (1 << 18)
-#define BTN_TEST_1        (1 << 19)
-#define BTN_FMC_RST       (1 << 20)
-#define BTN_AT_RST        (1 << 21)
-#define BTN_AP_RST        (1 << 22)
-#define BTN_FF_RST        (1 << 23)
-#define BTN_AB_RTO        (1 << 24)
-#define BTN_AB_1          (1 << 25)
-#define BTN_AB_2          (1 << 26)
-#define BTN_AB_3          (1 << 27)
-#define BTN_AB_MAX        (1 << 28)
-#define BTN_MFD_SYS       (1 << 29)
-#define BTN_MFD_ENG       (1 << 30)
-#define BTN_FF_USED       (1 << 31)
-
-/*
-*** EFIS buttons mapping ***
-*/
-
-#define EFIS_MAP  (1 << 0)
-#define EFIS_VOR  (1 << 1)
-#define EFIS_STD  (1 << 5)
-#define EFIS_RST  (1 << 6)
-#define EFIS_PLN  (1 << 7)
-#define EFIS_10   (1 << 8)
-#define EFIS_20   (1 << 9)
-#define EFIS_40   (1 << 10)
-#define EFIS_80   (1 << 11)
-#define EFIS_160  (1 << 12)
-#define EFIS_320  (1 << 13)
-#define EFIS_640  (1 << 14)
-#define EFIS_POS  (1 << 16)
-#define EFIS_DATA (1 << 17)
-#define EFIS_ARPT (1 << 18)
-#define EFIS_VOR2 (1 << 20)
-#define EFIS_ADF2 (1 << 21)
-#define EFIS_MTRS (1 << 23)
-#define EFIS_FPV  (1 << 24)
-#define EFIS_ADF1 (1 << 26)
-#define EFIS_VOR1 (1 << 27)
-#define EFIS_TERR (1 << 28)
-#define EFIS_WPT  (1 << 29)
-#define EFIS_STA  (1 << 30)
-#define EFIS_WXR  (1 << 31)
-
 struct mip_data_t {
 	unsigned char annunFireWarning     : 1;
 	unsigned char /* reserved bits */  : 7;
@@ -147,12 +87,69 @@ struct mcp_data_t {
 	unsigned char backlight;
 };
 
+/*
+*** MIP buttons mapping ***
+*/
+
+#define BTN_LOW_DU_ENG    (1 << 2)
+#define BTN_LOW_DU_ND     (1 << 3)
+#define BTN_MAIN_DU_MFD   (1 << 4)
+#define BTN_MAIN_DU_PFD   (1 << 5)
+#define BTN_MAIN_DU_ENG   (1 << 6)
+#define BTN_MAIN_DU_OUTBD (1 << 7)
+#define BTN_WARN_RECALL   (1 << 13)
+#define BTN_MSTR_CAUTION  (1 << 14)
+#define BTN_FIRW_WARNING  (1 << 15)
+#define BTN_LS_DIM        (1 << 16)
+#define BTN_LS_TEST       (1 << 17)
+#define BTN_TEST_2        (1 << 18)
+#define BTN_TEST_1        (1 << 19)
+#define BTN_FMC_RST       (1 << 20)
+#define BTN_AT_RST        (1 << 21)
+#define BTN_AP_RST        (1 << 22)
+#define BTN_FF_RST        (1 << 23)
+#define BTN_AB_RTO        (1 << 24)
+#define BTN_AB_1          (1 << 25)
+#define BTN_AB_2          (1 << 26)
+#define BTN_AB_3          (1 << 27)
+#define BTN_AB_MAX        (1 << 28)
+#define BTN_MFD_SYS       (1 << 29)
+#define BTN_MFD_ENG       (1 << 30)
+#define BTN_FF_USED       (1 << 31)
+
+/*
+*** EFIS buttons mapping ***
+*/
+
+#define EFIS_MAP (1 << 0)
+#define EFIS_VOR (1 << 1)
+#define EFIS_STD (1 << 5)
+#define EFIS_RST (1 << 6)
+#define EFIS_PLN (1 << 7)
+
 #pragma pack(push, 1)
 struct mip_ctrl_t {
 	unsigned long mipButtons;
-	unsigned long efisButtons;
-	unsigned char baro;
-	unsigned char mins;
+	unsigned char efisButtons;
+	unsigned char efisRange;
+	unsigned char efisPOS  : 1;
+	unsigned char efisDATA : 1;
+	unsigned char efisARPT : 1;
+	unsigned char /* NC */ : 1;
+	unsigned char efisVOR2 : 1;
+	unsigned char efisADF2 : 1;
+	unsigned char /* NC */ : 1;
+	unsigned char efisMTRS : 1;
+	unsigned char efisFPV  : 1;
+	unsigned char /* NC */ : 1;
+	unsigned char efisADF1 : 1;
+	unsigned char efisVOR1 : 1;
+	unsigned char efisTERR : 1;
+	unsigned char efisWPT  : 1;
+	unsigned char efisSTA  : 1;
+	unsigned char efisWXR  : 1;
+	unsigned char efisBaro;
+	unsigned char efisMins;
 };
 #pragma pack(pop)
 

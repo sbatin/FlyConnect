@@ -221,27 +221,27 @@ void run() {
 			ngx->send(EVT_DSP_CPT_MASTER_LIGHTS_SWITCH, panel.input.mainLights, ngx->data.MAIN_LightsSelector);
 			ngx->send(EVT_DSP_CPT_DISENGAGE_TEST_SWITCH, panel.input.disengageLights, ngx->data.MAIN_DisengageTestSelector[0]);
 			ngx->send(EVT_MPM_FUEL_FLOW_SWITCH, panel.input.fuelFlowSw, ngx->data.MAIN_FuelFlowSelector);
-			ngx->send(EVT_DSP_CPT_MAIN_DU_SELECTOR, panel.input.mainPanelDuSel, ngx->data.MAIN_MainPanelDUSel[0]);
-			ngx->send(EVT_DSP_CPT_LOWER_DU_SELECTOR, panel.input.loweDuSel, ngx->data.MAIN_LowerDUSel[0]);
+			ngx->send(EVT_DSP_CPT_MAIN_DU_SELECTOR, panel.input.mainPanelDU, ngx->data.MAIN_MainPanelDUSel[0]);
+			ngx->send(EVT_DSP_CPT_LOWER_DU_SELECTOR, panel.input.lowerDU, ngx->data.MAIN_LowerDUSel[0]);
 			ngx->pressButton(EVT_MASTER_CAUTION_LIGHT_LEFT, mipInput->mipButtons & BTN_MSTR_CAUTION);
 			ngx->pressButton(EVT_FIRE_WARN_LIGHT_LEFT, mipInput->mipButtons & BTN_FIRW_WARNING);
 			ngx->pressButton(EVT_SYSTEM_ANNUNCIATOR_PANEL_LEFT, mipInput->mipButtons & BTN_WARN_RECALL);
 
 			// EFIS
-			ngx->adjust(EVENT_BARO_SELECTOR_L, mipInput->baro);
-			ngx->adjust(EVENT_MINS_SELECTOR_L, mipInput->mins);
+			ngx->adjust(EVENT_BARO_SELECTOR_L, mipInput->efisBaro);
+			ngx->adjust(EVENT_MINS_SELECTOR_L, mipInput->efisMins);
 			ngx->send(EVT_EFIS_CPT_MODE, panel.input.efisMode, ngx->data.EFIS_ModeSel[0]);
-			ngx->send(EVT_EFIS_CPT_RANGE, panel.input.efisRange, ngx->data.EFIS_RangeSel[0]);
-			ngx->pressButton(EVT_EFIS_CPT_WXR, mipInput->efisButtons & EFIS_WXR);
-			ngx->pressButton(EVT_EFIS_CPT_STA, mipInput->efisButtons & EFIS_STA);
-			ngx->pressButton(EVT_EFIS_CPT_WPT, mipInput->efisButtons & EFIS_WPT);
-			ngx->pressButton(EVT_EFIS_CPT_ARPT, mipInput->efisButtons & EFIS_ARPT);
-			ngx->pressButton(EVT_EFIS_CPT_DATA, mipInput->efisButtons & EFIS_DATA);
-			ngx->pressButton(EVT_EFIS_CPT_POS, mipInput->efisButtons & EFIS_POS);
-			ngx->pressButton(EVT_EFIS_CPT_TERR, mipInput->efisButtons & EFIS_TERR);
-			ngx->pressButton(EVT_EFIS_CPT_WXR, mipInput->efisButtons & EFIS_WXR);
-			ngx->pressButton(EVT_EFIS_CPT_FPV, mipInput->efisButtons & EFIS_FPV);
-			ngx->pressButton(EVT_EFIS_CPT_MTRS, mipInput->efisButtons & EFIS_MTRS);
+			ngx->send(EVT_EFIS_CPT_RANGE, mipInput->efisRange, ngx->data.EFIS_RangeSel[0]);
+			ngx->pressButton(EVT_EFIS_CPT_WXR, mipInput->efisWXR);
+			ngx->pressButton(EVT_EFIS_CPT_STA, mipInput->efisSTA);
+			ngx->pressButton(EVT_EFIS_CPT_WPT, mipInput->efisWPT);
+			ngx->pressButton(EVT_EFIS_CPT_ARPT, mipInput->efisARPT);
+			ngx->pressButton(EVT_EFIS_CPT_DATA, mipInput->efisDATA);
+			ngx->pressButton(EVT_EFIS_CPT_POS, mipInput->efisPOS);
+			ngx->pressButton(EVT_EFIS_CPT_TERR, mipInput->efisTERR);
+			ngx->pressButton(EVT_EFIS_CPT_WXR, mipInput->efisWXR);
+			ngx->pressButton(EVT_EFIS_CPT_FPV, mipInput->efisFPV);
+			ngx->pressButton(EVT_EFIS_CPT_MTRS, mipInput->efisMTRS);
 			ngx->pressButton(EVT_EFIS_CPT_BARO_STD, mipInput->efisButtons & EFIS_STD);
 			ngx->pressButton(EVT_EFIS_CPT_MINIMUMS_RST, mipInput->efisButtons & EFIS_RST);
 		}
@@ -259,7 +259,7 @@ void lab() {
 	while (1) {
 		if (panel.read()) {
 			auto ctrl = &panel.input;
-			printf(">>> Control received, Autobreak = %d, EFIS Range = %d, EFIS Mode = %d\n", ctrl->autoBreak, ctrl->efisRange, ctrl->efisMode);
+			printf(">>> Control received, Autobreak = %d, EFIS Range = %d, EFIS Mode = %d\n", ctrl->autoBreak, ctrl->mip.efisRange, ctrl->efisMode);
 
 			int i;
 
@@ -268,7 +268,7 @@ void lab() {
 			}
 			printf("mip buttons %x, bit %d\n", ctrl->mip.mipButtons, i);
 
-			for (i = 0; i < 32; i++) {
+			for (i = 0; i < 16; i++) {
 				if (ctrl->mip.efisButtons & (1 << i)) break;
 			}
 			printf("efis buttons %x, bit %d\n", ctrl->mip.efisButtons, i);
