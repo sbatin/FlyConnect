@@ -1,5 +1,9 @@
 #include <string>
 
+enum GROUP_ID {
+	GROUP_0,
+};
+
 void Joystick_MapButton(HANDLE hSimConnect, char button, SIMCONNECT_CLIENT_EVENT_ID eventId) {
 	using namespace std;
 	auto name = "joystick:2:button:" + to_string(static_cast<long long>(button));

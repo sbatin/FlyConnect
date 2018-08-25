@@ -117,20 +117,15 @@ struct mcp_data_t {
 #define BTN_MFD_ENG       (1 << 30)
 #define BTN_FF_USED       (1 << 31)
 
-/*
-*** EFIS buttons mapping ***
-*/
-
-#define EFIS_MAP (1 << 0)
-#define EFIS_VOR (1 << 1)
-#define EFIS_STD (1 << 5)
-#define EFIS_RST (1 << 6)
-#define EFIS_PLN (1 << 7)
-
 #pragma pack(push, 1)
 struct mip_ctrl_t {
 	unsigned long mipButtons;
-	unsigned char efisButtons;
+	unsigned char efis_MAP : 1;
+	unsigned char efis_VOR : 1;
+	unsigned char /* NC */ : 3;
+	unsigned char efisSTD  : 1;
+	unsigned char efisRST  : 1;
+	unsigned char efis_PLN : 1;
 	unsigned char efisRange;
 	unsigned char efisPOS  : 1;
 	unsigned char efisDATA : 1;

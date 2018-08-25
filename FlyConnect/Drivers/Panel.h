@@ -183,7 +183,6 @@ public:
 		input.mip.efisBaro = 0;
 		input.mip.efisMins = 0;
 		input.mip.mipButtons = 0;
-		input.mip.efisButtons = 0;
 		input.mcp.value = 0;
 
 		if (mcpPort.readData(&input.mcp)) {
@@ -222,11 +221,11 @@ public:
 			else
 				input.lowerDU = 1;
 
-			if (input.mip.efisButtons & EFIS_VOR)
+			if (input.mip.efis_VOR)
 				input.efisMode = 1;
-			else if (input.mip.efisButtons & EFIS_MAP)
+			else if (input.mip.efis_MAP)
 				input.efisMode = 2;
-			else if (input.mip.efisButtons & EFIS_PLN)
+			else if (input.mip.efis_PLN)
 				input.efisMode = 3;
 			else
 				input.efisMode = 0;

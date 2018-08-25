@@ -208,5 +208,3 @@ public:
 		delete port;
 	};
 };
-
-RadioPanel radio = RadioPanel();

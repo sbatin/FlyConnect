@@ -4,70 +4,9 @@
 #include "stdafx.h"
 #include "Panel.h"
 #include "Events.h"
-#include "SimConnect.h"
-#include "Radio.h"
-#include "Joystick.h"
 #include "NgxInterface.h"
 
 Panel panel = Panel();
-HANDLE hSimConnect = NULL;
-
-void CALLBACK MyDispatchProc(SIMCONNECT_RECV* pData, DWORD cbData, void *pContext) {
-	auto ngx = (NgxInterface*)pContext;
-
-	switch (pData->dwID) {
-	case SIMCONNECT_RECV_ID_EXCEPTION: {
-		SIMCONNECT_RECV_EXCEPTION * except = (SIMCONNECT_RECV_EXCEPTION*)pData;
-		printf("***** EXCEPTION=%d  SendID=%d  Index=%d  cbData=%d\n", except->dwException, except->dwSendID, except->dwIndex, cbData);
-		break;
-	}
-
-	case SIMCONNECT_RECV_ID_OPEN:
-		printf("MyDispatchProc.Received: SIMCONNECT_RECV_ID_OPEN\n");
-		break;
-
-	case SIMCONNECT_RECV_ID_QUIT:
-		printf("MyDispatchProc.Received: SIMCONNECT_RECV_ID_QUIT\n");
-		ngx->connected = 0;
-		break;
-
-	case SIMCONNECT_RECV_ID_EVENT:
-		HandleSimEvent(ngx, (SIMCONNECT_RECV_EVENT*)pData);
-		break;
-
-	case SIMCONNECT_RECV_ID_CLIENT_DATA: {
-		ngx->setData((SIMCONNECT_RECV_CLIENT_DATA*)pData);
-		break;
-	}
-
-	case SIMCONNECT_RECV_ID_SIMOBJECT_DATA_BYTYPE: {
-		SIMCONNECT_RECV_SIMOBJECT_DATA_BYTYPE *pObjData = (SIMCONNECT_RECV_SIMOBJECT_DATA_BYTYPE*)pData;
-
-		if (pObjData->dwRequestID == RADIO_REQUEST) {
-			DWORD ObjectID = pObjData->dwObjectID;
-			radio.setRadioData((FSX_RadioData*)&pObjData->dwData);
-		}
-		break;
-	}
-
-	default:
-		printf("MyDispatchProc.Received:%d\n", pData->dwID);
-		break;
-	}
-
-	fflush(stdout);
-}
-
-DWORD WINAPI PollForData(LPVOID lpParam) {
-	auto ngx = (NgxInterface*)lpParam;
-
-	while (ngx->connected) {
-		SimConnect_CallDispatch(hSimConnect, MyDispatchProc, lpParam);
-		Sleep(10);
-	}
-
-	return 0;
-}
 
 void sendNGX_PanelState(PMDG_NGX_Data* state) {
 	auto seconds = time(NULL);
@@ -154,22 +93,12 @@ void sendNGX_PanelState(PMDG_NGX_Data* state) {
 }
 
 void run() {
-	HRESULT hr = SimConnect_Open(&hSimConnect, "PMDGWrapper", NULL, 0, 0, 0);
-
-	if (FAILED(hr)) return;
-
-	printf("Connected to Flight Simulator\n");
-	Joystick_MapEvents(hSimConnect);
-	radio.setup(hSimConnect);
-
-	auto ngx = new NgxInterface(hSimConnect);
-	auto pollForDataThread = CreateThread(NULL, 0, PollForData, ngx, 0, NULL);
-
+	auto ngx = new NgxInterface();
 	ngx->connect();
 
 	while (ngx->connected) {
 		sendNGX_PanelState(&ngx->data);
-		radio.sendControlData(hSimConnect);
+		//radio.sendControlData(hSimConnect);
 		//SimConnect_RequestDataOnSimObjectType(hSimConnect, RADIO_REQUEST, RADIO_DEF, 0, SIMCONNECT_SIMOBJECT_TYPE_USER);
 
 		if (panel.read()) {
@@ -242,8 +171,8 @@ void run() {
 			ngx->pressButton(EVT_EFIS_CPT_WXR, mipInput->efisWXR);
 			ngx->pressButton(EVT_EFIS_CPT_FPV, mipInput->efisFPV);
 			ngx->pressButton(EVT_EFIS_CPT_MTRS, mipInput->efisMTRS);
-			ngx->pressButton(EVT_EFIS_CPT_BARO_STD, mipInput->efisButtons & EFIS_STD);
-			ngx->pressButton(EVT_EFIS_CPT_MINIMUMS_RST, mipInput->efisButtons & EFIS_RST);
+			ngx->pressButton(EVT_EFIS_CPT_BARO_STD, mipInput->efisSTD);
+			ngx->pressButton(EVT_EFIS_CPT_MINIMUMS_RST, mipInput->efisRST);
 		}
 
 		Sleep(50);
@@ -261,17 +190,11 @@ void lab() {
 			auto ctrl = &panel.input;
 			printf(">>> Control received, Autobreak = %d, EFIS Range = %d, EFIS Mode = %d\n", ctrl->autoBreak, ctrl->mip.efisRange, ctrl->efisMode);
 
-			int i;
-
-			for (i = 0; i < 32; i++) {
-				if (ctrl->mip.mipButtons & (1 << i)) break;
+			for (int i = 0; i < 32; i++) {
+				if (ctrl->mip.mipButtons & (1 << i)) {
+					printf("mip buttons %x, bit %d\n", ctrl->mip.mipButtons, i);
+				}
 			}
-			printf("mip buttons %x, bit %d\n", ctrl->mip.mipButtons, i);
-
-			for (i = 0; i < 16; i++) {
-				if (ctrl->mip.efisButtons & (1 << i)) break;
-			}
-			printf("efis buttons %x, bit %d\n", ctrl->mip.efisButtons, i);
 		}
 
 		time_t seconds = time(NULL);
@@ -288,7 +211,7 @@ void lab() {
 		counter2++;
 		if (counter1 == 16) counter1 = 0;
 		if (counter2 == 8) counter2 = 0;
-		Sleep(100);
+		Sleep(200);
 	}
 }
 
@@ -297,6 +220,5 @@ int main() {
 	//lab();
 	run();
 	panel.disconnect();
-	Sleep(1000);
 	return 0;
 }
