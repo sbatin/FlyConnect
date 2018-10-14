@@ -87,62 +87,52 @@ struct mcp_data_t {
 	unsigned char backlight;
 };
 
-/*
-*** MIP buttons mapping ***
-*/
-
-#define BTN_LOW_DU_ENG    (1 << 2)
-#define BTN_LOW_DU_ND     (1 << 3)
-#define BTN_MAIN_DU_MFD   (1 << 4)
-#define BTN_MAIN_DU_PFD   (1 << 5)
-#define BTN_MAIN_DU_ENG   (1 << 6)
-#define BTN_MAIN_DU_OUTBD (1 << 7)
-#define BTN_WARN_RECALL   (1 << 13)
-#define BTN_MSTR_CAUTION  (1 << 14)
-#define BTN_FIRW_WARNING  (1 << 15)
-#define BTN_LS_DIM        (1 << 16)
-#define BTN_LS_TEST       (1 << 17)
-#define BTN_TEST_2        (1 << 18)
-#define BTN_TEST_1        (1 << 19)
-#define BTN_FMC_RST       (1 << 20)
-#define BTN_AT_RST        (1 << 21)
-#define BTN_AP_RST        (1 << 22)
-#define BTN_FF_RST        (1 << 23)
-#define BTN_AB_RTO        (1 << 24)
-#define BTN_AB_1          (1 << 25)
-#define BTN_AB_2          (1 << 26)
-#define BTN_AB_3          (1 << 27)
-#define BTN_AB_MAX        (1 << 28)
-#define BTN_MFD_SYS       (1 << 29)
-#define BTN_MFD_ENG       (1 << 30)
-#define BTN_FF_USED       (1 << 31)
-
 #pragma pack(push, 1)
 struct mip_ctrl_t {
-	unsigned long mipButtons;
-	unsigned char efis_MAP : 1;
-	unsigned char efis_VOR : 1;
-	unsigned char /* NC */ : 3;
-	unsigned char efisSTD  : 1;
-	unsigned char efisRST  : 1;
-	unsigned char efis_PLN : 1;
+	unsigned char /* NC */    : 4;
+	unsigned char gearUP      : 1;
+	unsigned char gearDN      : 1;
+	unsigned char lowerDU     : 2;
+	unsigned char mainPanelDU : 4;
+	unsigned char /* NC */    : 1;
+	unsigned char annunRecall : 1;
+	unsigned char masterCautn : 1;
+	unsigned char fireWarning : 1;
+	unsigned char lightsDim   : 1;
+	unsigned char lightsTest  : 1;
+	unsigned char afdsTest2   : 1;
+	unsigned char afdsTest1   : 1;
+	unsigned char afdsRstFMC  : 1;
+	unsigned char afdsRstAT   : 1;
+	unsigned char afdsRstAP   : 1;
+	unsigned char ffReset     : 1;
+	unsigned char autoBreak   : 5;
+	unsigned char mfdSYS      : 1;
+	unsigned char mfdENG      : 1;
+	unsigned char ffUsed      : 1;
+	unsigned char efis_MAP    : 1;
+	unsigned char efis_VOR    : 1;
+	unsigned char /* NC */    : 3;
+	unsigned char efisSTD     : 1;
+	unsigned char efisRST     : 1;
+	unsigned char efis_PLN    : 1;
 	unsigned char efisRange;
-	unsigned char efisPOS  : 1;
-	unsigned char efisDATA : 1;
-	unsigned char efisARPT : 1;
-	unsigned char /* NC */ : 1;
-	unsigned char efisVOR2 : 1;
-	unsigned char efisADF2 : 1;
-	unsigned char /* NC */ : 1;
-	unsigned char efisMTRS : 1;
-	unsigned char efisFPV  : 1;
-	unsigned char /* NC */ : 1;
-	unsigned char efisADF1 : 1;
-	unsigned char efisVOR1 : 1;
-	unsigned char efisTERR : 1;
-	unsigned char efisWPT  : 1;
-	unsigned char efisSTA  : 1;
-	unsigned char efisWXR  : 1;
+	unsigned char efisPOS     : 1;
+	unsigned char efisDATA    : 1;
+	unsigned char efisARPT    : 1;
+	unsigned char /* NC */    : 1;
+	unsigned char efisVOR2    : 1;
+	unsigned char efisADF2    : 1;
+	unsigned char /* NC */    : 1;
+	unsigned char efisMTRS    : 1;
+	unsigned char efisFPV     : 1;
+	unsigned char /* NC */    : 1;
+	unsigned char efisADF1    : 1;
+	unsigned char efisVOR1    : 1;
+	unsigned char efisTERR    : 1;
+	unsigned char efisWPT     : 1;
+	unsigned char efisSTA     : 1;
+	unsigned char efisWXR     : 1;
 	unsigned char efisBaro;
 	unsigned char efisMins;
 };
@@ -167,4 +157,27 @@ struct mcp_ctrl_t {
 	unsigned char lvl_chg  : 1;
 	unsigned char hdg_sel  : 1;
 	unsigned char app      : 1;
+};
+
+struct radio_ctrl_t {
+	unsigned char enc1;
+	unsigned char enc2;
+	unsigned char freqSelected;
+	unsigned char atcMode;
+};
+
+struct frequency_t {
+	unsigned short active;
+	unsigned short standby;
+};
+
+struct radio_data_t {
+	frequency_t com1;
+	frequency_t com2;
+	frequency_t nav1;
+	frequency_t nav2;
+	frequency_t adf1;
+	unsigned short atcCode;
+	unsigned char atcMode;
+	unsigned char freqSelected;
 };

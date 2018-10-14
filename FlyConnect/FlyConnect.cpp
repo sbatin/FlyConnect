@@ -10,7 +10,6 @@ Panel panel = Panel();
 
 void sendNGX_PanelState(PMDG_NGX_Data* state) {
 	auto seconds = time(NULL);
-
 	if (state->ELEC_BatSelector) {
 		DisplayState IASState = Blank;
 
@@ -79,7 +78,7 @@ void sendNGX_PanelState(PMDG_NGX_Data* state) {
 	panel.mip.annunWarnOvht = state->WARN_annunOVHT_DET;
 
 	// test
-	if (state->MAIN_LightsSelector == 0) {
+	if (state->MAIN_LightsSelector == 0 && state->ELEC_BatSelector > 0) {
 		panel.lightsTest();
 		// bright
 	} else if (state->MAIN_LightsSelector == 1) {
@@ -98,12 +97,11 @@ void run() {
 
 	while (ngx->connected) {
 		sendNGX_PanelState(&ngx->data);
-		//radio.sendControlData(hSimConnect);
-		//SimConnect_RequestDataOnSimObjectType(hSimConnect, RADIO_REQUEST, RADIO_DEF, 0, SIMCONNECT_SIMOBJECT_TYPE_USER);
 
 		if (panel.read()) {
 			auto mcpInput = &panel.input.mcp;
 			auto mipInput = &panel.input.mip;
+			printf(">>> Control received, MCP_Enc = %d, MINS = %d\n", mcpInput->value, mipInput->efisMins);
 
 			switch (mcpInput->encoder) {
 				case MCP_ALTITUDE:
@@ -123,6 +121,11 @@ void run() {
 					break;
 			}
 
+			if (mipInput->gearUP && ngx->data.MAIN_GearLever != 0) ngx->send(EVT_GEAR_LEVER, MOUSE_FLAG_RIGHTSINGLE);
+			if (mipInput->gearDN && ngx->data.MAIN_GearLever != 2) ngx->send(EVT_GEAR_LEVER, MOUSE_FLAG_LEFTSINGLE);
+			if (!mipInput->gearUP && !mipInput->gearDN && ngx->data.MAIN_GearLever != 1) ngx->send(EVT_GEAR_LEVER_OFF, MOUSE_FLAG_LEFTSINGLE);
+
+			// MCP
 			if (mcpInput->fd_ca != ngx->data.MCP_FDSw[0]) ngx->send(EVT_MCP_FD_SWITCH_L, mcpInput->fd_ca ? 0 : 1);
 			if (mcpInput->fd_fo != ngx->data.MCP_FDSw[1]) ngx->send(EVT_MCP_FD_SWITCH_R, mcpInput->fd_fo ? 0 : 1);
 			if (mcpInput->at_arm != ngx->data.MCP_ATArmSw) ngx->send(EVT_MCP_AT_ARM_SWITCH, mcpInput->at_arm ? 0 : 1);
@@ -139,22 +142,22 @@ void run() {
 			ngx->pressButton(EVT_MCP_VS_SWITCH, mcpInput->vs);
 
 			// MIP
-			ngx->pressButton(EVT_MPM_MFD_ENG_BUTTON, mipInput->mipButtons & BTN_MFD_ENG);
-			ngx->pressButton(EVT_MPM_MFD_SYS_BUTTON, mipInput->mipButtons & BTN_MFD_SYS);
-			ngx->pressButton(EVT_DSP_CPT_AP_RESET_SWITCH, mipInput->mipButtons & BTN_AP_RST);
-			ngx->pressButton(EVT_DSP_CPT_AT_RESET_SWITCH, mipInput->mipButtons & BTN_AT_RST);
-			ngx->pressButton(EVT_DSP_CPT_FMC_RESET_SWITCH, mipInput->mipButtons & BTN_FMC_RST);
-			ngx->send(EVT_MPM_AUTOBRAKE_SELECTOR, panel.input.autoBreak, ngx->data.MAIN_AutobrakeSelector);
+			ngx->pressButton(EVT_MPM_MFD_ENG_BUTTON, mipInput->mfdENG);
+			ngx->pressButton(EVT_MPM_MFD_SYS_BUTTON, mipInput->mfdSYS);
+			ngx->pressButton(EVT_DSP_CPT_AP_RESET_SWITCH, mipInput->afdsRstAP);
+			ngx->pressButton(EVT_DSP_CPT_AT_RESET_SWITCH, mipInput->afdsRstAT);
+			ngx->pressButton(EVT_DSP_CPT_FMC_RESET_SWITCH, mipInput->afdsRstFMC);
+			ngx->send(EVT_MPM_AUTOBRAKE_SELECTOR, mipInput->autoBreak, ngx->data.MAIN_AutobrakeSelector);
 			ngx->send(EVT_EFIS_CPT_VOR_ADF_SELECTOR_L, panel.input.vorAdfSel1, ngx->data.EFIS_VORADFSel1[0]);
 			ngx->send(EVT_EFIS_CPT_VOR_ADF_SELECTOR_R, panel.input.vorAdfSel2, ngx->data.EFIS_VORADFSel2[0]);
 			ngx->send(EVT_DSP_CPT_MASTER_LIGHTS_SWITCH, panel.input.mainLights, ngx->data.MAIN_LightsSelector);
 			ngx->send(EVT_DSP_CPT_DISENGAGE_TEST_SWITCH, panel.input.disengageLights, ngx->data.MAIN_DisengageTestSelector[0]);
 			ngx->send(EVT_MPM_FUEL_FLOW_SWITCH, panel.input.fuelFlowSw, ngx->data.MAIN_FuelFlowSelector);
-			ngx->send(EVT_DSP_CPT_MAIN_DU_SELECTOR, panel.input.mainPanelDU, ngx->data.MAIN_MainPanelDUSel[0]);
-			ngx->send(EVT_DSP_CPT_LOWER_DU_SELECTOR, panel.input.lowerDU, ngx->data.MAIN_LowerDUSel[0]);
-			ngx->pressButton(EVT_MASTER_CAUTION_LIGHT_LEFT, mipInput->mipButtons & BTN_MSTR_CAUTION);
-			ngx->pressButton(EVT_FIRE_WARN_LIGHT_LEFT, mipInput->mipButtons & BTN_FIRW_WARNING);
-			ngx->pressButton(EVT_SYSTEM_ANNUNCIATOR_PANEL_LEFT, mipInput->mipButtons & BTN_WARN_RECALL);
+			ngx->send(EVT_DSP_CPT_MAIN_DU_SELECTOR, mipInput->mainPanelDU, ngx->data.MAIN_MainPanelDUSel[0]);
+			ngx->send(EVT_DSP_CPT_LOWER_DU_SELECTOR, mipInput->lowerDU, ngx->data.MAIN_LowerDUSel[0]);
+			ngx->pressButton(EVT_MASTER_CAUTION_LIGHT_LEFT, mipInput->masterCautn);
+			ngx->pressButton(EVT_FIRE_WARN_LIGHT_LEFT, mipInput->fireWarning);
+			ngx->pressButton(EVT_SYSTEM_ANNUNCIATOR_PANEL_LEFT, mipInput->annunRecall);
 
 			// EFIS
 			ngx->adjust(EVENT_BARO_SELECTOR_L, mipInput->efisBaro);
@@ -188,13 +191,7 @@ void lab() {
 	while (1) {
 		if (panel.read()) {
 			auto ctrl = &panel.input;
-			printf(">>> Control received, Autobreak = %d, EFIS Range = %d, EFIS Mode = %d\n", ctrl->autoBreak, ctrl->mip.efisRange, ctrl->efisMode);
-
-			for (int i = 0; i < 32; i++) {
-				if (ctrl->mip.mipButtons & (1 << i)) {
-					printf("mip buttons %x, bit %d\n", ctrl->mip.mipButtons, i);
-				}
-			}
+			printf(">>> Control received, Autobreak = %d, EFIS Range = %d, EFIS Mode = %d, Main Panel DU = %d, Lower DU = %d\n", ctrl->mip.autoBreak, ctrl->mip.efisRange, ctrl->efisMode, ctrl->mip.mainPanelDU, ctrl->mip.lowerDU);
 		}
 
 		time_t seconds = time(NULL);
@@ -205,7 +202,11 @@ void lab() {
 		panel.mcp.vspeedCrsR = 0xDEFFFFFF & displayLo(-1000);
 		panel.mcp.altitudeHdg = displayHi(counter1) & displayLo(getGaugeValue(value));
 		panel.mcp.backlight = value * 5;
-		panel.mcp.backlight = value * 5;
+		panel.mip.annunAntiskidInop = 1;
+		panel.mip.annunATRstRed = 1;
+		panel.mip.annunBelowGS = 1;
+		panel.mip.annunFlapsTransit = 1;
+		panel.mip.annunLGearGrn = 1;
 		panel.send();
 		counter1++;
 		counter2++;
@@ -216,7 +217,7 @@ void lab() {
 }
 
 int main() {
-	panel.connect(L"COM5", L"COM6");
+	panel.connect(L"COM6", L"COM9");
 	//lab();
 	run();
 	panel.disconnect();

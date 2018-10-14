@@ -12,8 +12,6 @@ enum DATA_REQUEST_ID {
 
 using namespace std;
 
-RadioPanel radio = RadioPanel();
-
 class NgxInterface {
 private:
 	PMDG_NGX_Control control;
@@ -23,6 +21,7 @@ private:
 public:
 	int connected;
 	PMDG_NGX_Data data;
+	FSX_Radio_Data radio;
 
 	NgxInterface() {};
 	~NgxInterface() {};
@@ -69,7 +68,6 @@ public:
 		if (pData->dwRequestID == DATA_REQUEST) {
 			auto pS = (PMDG_NGX_Data*)&pData->dwData;
 			data = *pS;
-			radio.setXpndrMode(pS->XPDR_ModeSel);
 		} /*else if (pObjData->dwRequestID == CONTROL_REQUEST) {
 			// keep the present state of Control area to know if the server had received and reset the command
 			PMDG_NGX_Control *pS = (PMDG_NGX_Control*)&pObjData->dwData;
@@ -129,19 +127,35 @@ static void HandleSimEvent(NgxInterface* ngx, SIMCONNECT_RECV_EVENT* evt) {
 			break;
 
 		case EVENT_INPUT_TGL4_ON:
-			ngx->send(EVT_OH_LIGHTS_L_ENGINE_START, 2);
+			ngx->send(EVT_OH_LIGHTS_ANT_COL, 0);
 			break;
 
 		case EVENT_INPUT_TGL4_OFF:
-			ngx->send(EVT_OH_LIGHTS_L_ENGINE_START, 1);
+			ngx->send(EVT_OH_LIGHTS_ANT_COL, 1);
+			break;
+
+		case EVENT_INPUT_TGL3_ON:
+			ngx->send(EVT_OH_LIGHTS_POS_STROBE, evt->dwData ? MOUSE_FLAG_RIGHTSINGLE : MOUSE_FLAG_RIGHTRELEASE);
+			break;
+
+		case EVENT_INPUT_TGL3_OFF:
+			ngx->send(EVT_OH_LIGHTS_POS_STROBE, evt->dwData ? MOUSE_FLAG_LEFTSINGLE : MOUSE_FLAG_LEFTRELEASE);
 			break;
 
 		case EVENT_INPUT_TGL2_ON:
-			ngx->send(EVT_OH_LIGHTS_R_ENGINE_START, 2);
+			ngx->send(EVT_OH_LIGHTS_LOGO, 0);
 			break;
 
 		case EVENT_INPUT_TGL2_OFF:
-			ngx->send(EVT_OH_LIGHTS_R_ENGINE_START, 1);
+			ngx->send(EVT_OH_LIGHTS_LOGO, 1);
+			break;
+
+		case EVENT_INPUT_TGL1_ON:
+			ngx->send(EVT_OH_LIGHTS_APU_START, 0);
+			break;
+
+		case EVENT_INPUT_TGL1_OFF:
+			ngx->send(EVT_OH_LIGHTS_APU_START, evt->dwData ? MOUSE_FLAG_LEFTSINGLE : MOUSE_FLAG_LEFTRELEASE);
 			break;
 	}
 }
@@ -177,10 +191,10 @@ static void CALLBACK MyDispatchProc(SIMCONNECT_RECV* pData, DWORD cbData, void *
 	case SIMCONNECT_RECV_ID_SIMOBJECT_DATA_BYTYPE: {
 		SIMCONNECT_RECV_SIMOBJECT_DATA_BYTYPE *pObjData = (SIMCONNECT_RECV_SIMOBJECT_DATA_BYTYPE*)pData;
 
-		/*if (pObjData->dwRequestID == RADIO_REQUEST) {
+		if (pObjData->dwRequestID == RADIO_REQUEST) {
 			DWORD ObjectID = pObjData->dwObjectID;
-			radio.setRadioData((FSX_RadioData*)&pObjData->dwData);
-		}*/
+			RadioInterface::setData(&ngx->radio, (FSX_Radio_Data*)&pObjData->dwData);
+		}
 		break;
 	}
 
@@ -205,7 +219,7 @@ void NgxInterface::connect() {
 
 	printf("Connected to Flight Simulator\n");
 	Joystick_MapEvents(hSimConnect);
-	radio.setup(hSimConnect);
+	RadioInterface::connect(hSimConnect);
 
 	// Associate an ID with the PMDG data area name
 	SimConnect_MapClientDataNameToID(hSimConnect, PMDG_NGX_DATA_NAME, PMDG_NGX_DATA_ID);
@@ -241,6 +255,7 @@ void NgxInterface::connect() {
 void NgxInterface::pollForData() {
 	while (connected) {
 		SimConnect_CallDispatch(hSimConnect, MyDispatchProc, this);
+		//SimConnect_RequestDataOnSimObjectType(hSimConnect, RADIO_REQUEST, RADIO_DEF, 0, SIMCONNECT_SIMOBJECT_TYPE_USER);
 		Sleep(10);
 	}
 }

@@ -1,125 +1,45 @@
-#include "SerialPort.h"
-
 enum DATA_DEFINE_ID {
     RADIO_DEF,
 };
 
-struct cdu_ctrl_t {
-	unsigned char enc1;
-	unsigned char enc2;
-	unsigned char freqSelected;
-	unsigned char atcMode;
+struct FSX_Radio_Data {
+	double NAV1_Active;
+	double NAV1_StandBy;
+	double NAV2_Active;
+	double NAV2_StandBy;
+	double COM1_Active;
+	double COM1_StandBy;
+	double COM2_Active;
+	double COM2_StandBy;
+	double ADF1_Active;
+	double ADF1_StandBy;
+	double Transponder;
 };
 
-struct frequency_t {
-	unsigned short active;
-	unsigned short standby;
-};
+/*static inline double convertFrequency(double frequency) {
+	return floor(100 * frequency + 0.5);
+}*/
 
-struct cdu_data_t {
-	frequency_t com1;
-	frequency_t com2;
-	frequency_t nav1;
-	frequency_t nav2;
-	frequency_t adf1;
-	unsigned short atcCode;
-	unsigned char atcMode;
-	unsigned char freqSelected;
-};
+struct RadioInterface {
+	template <typename T>
+	static T converBCD(T value) {
+		int k = 1;
+		T result = 0;
 
-struct FSX_RadioData {
-	double nav1_active;
-	double nav1_standby;
-	double nav2_active;
-	double nav2_standby;
-	double com1_active;
-	double com1_standby;
-	double com2_active;
-	double com2_standby;
-	double adf1_active;
-	double adf1_standby;
-	double transponder;
-};
-
-unsigned short convertFrequency(double frequency) {
-	return (unsigned short)floor(100 * frequency + 0.5);
-}
-
-template <typename T>
-T converBCD(T value) {
-	int k = 1;
-	T result = 0;
-
-	while (value) {
-		result+= k * (value & 0xF);
-		k*= 10;
-		value = value >> 4;
-	}
-
-	return result;
-}
-
-static inline unsigned short convertBCD16(double frequency) {
-	return 10000 + converBCD((unsigned short)frequency);
-}
-
-class RadioPanel {
-private:
-	struct cdu_ctrl_t ctrl;
-	struct cdu_data_t currData;
-	struct cdu_data_t prevData;
-	SerialPort* port;
-	unsigned char freqSelected;
-
-	void update() {
-		if (memcmp(&currData, &prevData, sizeof(cdu_data_t))) {
-			port->sendData(&currData);
-			memcpy(&prevData, &currData, sizeof(cdu_data_t));
+		while (value) {
+			result += k * (value & 0xF);
+			k *= 10;
+			value = value >> 4;
 		}
+
+		return result;
 	}
 
-	void sendToggleEvent(HANDLE hSimConnect, EVENT_ID evt) {
-		SimConnect_TransmitClientEvent(hSimConnect, 0, evt, 0, SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+	static inline double convertBCD16(double frequency) {
+		return 100 + (double)converBCD((unsigned short)frequency) / 100;
 	}
 
-	void sendLinearIncDecEvent(HANDLE hSimConnect, char value, EVENT_ID inc, EVENT_ID dec) {
-		if (value > 0)
-			SimConnect_TransmitClientEvent(hSimConnect, 0, inc, 0, SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-
-		if (value < 0)
-			SimConnect_TransmitClientEvent(hSimConnect, 0, dec, 0, SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-	}
-public:
-	void connect(LPCWSTR path) {
-		printf("Radio panel connecting...\n");
-		if (port->connect(path)) {
-			char *message = port->readMessage();
-			printf("Radio panel connected: %s\n", message);
-		}
-	}
-
-	void setXpndrMode(unsigned char mode) {
-		currData.atcMode = mode;
-		update();
-	}
-
-	void setRadioData(FSX_RadioData* rawData) {
-		currData.nav1.active  = convertFrequency(rawData->nav1_active);
-		currData.nav1.standby = convertFrequency(rawData->nav1_standby);
-		currData.nav2.active  = convertFrequency(rawData->nav2_active);
-		currData.nav2.standby = convertFrequency(rawData->nav2_standby);
-		currData.com1.active  = convertBCD16(rawData->com1_active);
-		currData.com1.standby = convertBCD16(rawData->com1_standby);
-		currData.com2.active  = convertBCD16(rawData->com2_active);
-		currData.com2.standby = convertBCD16(rawData->com2_standby);
-		currData.adf1.active  = converBCD((unsigned int)rawData->adf1_active) / 1000;
-		currData.adf1.standby = (unsigned int)(rawData->adf1_standby) / 100;
-		currData.atcCode      = convertBCD16(rawData->transponder);
-		currData.freqSelected = freqSelected;
-		update();
-	}
-
-	void setup(HANDLE hSimConnect) {
+	static void connect(HANDLE hSimConnect) {
 		SimConnect_AddToDataDefinition(hSimConnect, RADIO_DEF, "NAV ACTIVE FREQUENCY:1", "MHz");
 		SimConnect_AddToDataDefinition(hSimConnect, RADIO_DEF, "NAV STANDBY FREQUENCY:1", "MHz");
 		SimConnect_AddToDataDefinition(hSimConnect, RADIO_DEF, "NAV ACTIVE FREQUENCY:2", "MHz");
@@ -164,6 +84,66 @@ public:
 		SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_ATC1_RADIO_FRACT_INC, "XPNDR_INC_CARRY");
 	}
 
+	static void toggle(HANDLE hSimConnect, EVENT_ID evt) {
+		SimConnect_TransmitClientEvent(hSimConnect, 0, evt, 0, SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+	}
+
+	static void rotate(HANDLE hSimConnect, char value, EVENT_ID inc, EVENT_ID dec) {
+		if (value > 0)
+			SimConnect_TransmitClientEvent(hSimConnect, 0, inc, 0, SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+
+		if (value < 0)
+			SimConnect_TransmitClientEvent(hSimConnect, 0, dec, 0, SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+	}
+
+	static void setData(FSX_Radio_Data* destionation, const FSX_Radio_Data* source) {
+		destionation->NAV1_Active  = source->NAV1_Active;
+		destionation->NAV1_StandBy = source->NAV1_StandBy;
+		destionation->NAV2_Active  = source->NAV2_Active;
+		destionation->NAV2_StandBy = source->NAV2_StandBy;
+		destionation->COM1_Active  = convertBCD16(source->COM1_Active);
+		destionation->COM1_StandBy = convertBCD16(source->COM1_StandBy);
+		destionation->COM2_Active  = convertBCD16(source->COM2_Active);
+		destionation->COM2_StandBy = convertBCD16(source->COM2_StandBy);
+		destionation->ADF1_Active  = (double)converBCD((unsigned int)source->ADF1_Active) / 10000;
+		//destionation->ADF1_StandBy = source->ADF1_StandBy / 100;
+		destionation->Transponder  = converBCD((unsigned short)source->Transponder);
+	}
+};
+
+/*class RadioPanel {
+private:
+	struct cdu_ctrl_t ctrl;
+	struct cdu_data_t currData;
+	struct cdu_data_t prevData;
+	unsigned char freqSelected;
+
+	void update() {
+		if (memcmp(&currData, &prevData, sizeof(cdu_data_t))) {
+			port->sendData(&currData);
+			memcpy(&prevData, &currData, sizeof(cdu_data_t));
+		}
+	}
+	
+public:
+	void connect(LPCWSTR path) {
+		printf("Radio panel connecting...\n");
+		if (port->connect(path)) {
+			char *message = port->readMessage();
+			printf("Radio panel connected: %s\n", message);
+		}
+	}
+
+	void setXpndrMode(unsigned char mode) {
+		currData.atcMode = mode;
+		update();
+	}
+
+	void setRadioData(FSX_RadioData* rawData) {
+		currData.freqSelected = freqSelected;
+		update();
+	}
+
 	void sendControlData(HANDLE hSimConnect) {
 		if (port->readData(&ctrl)) {
 			if (ctrl.freqSelected) {
@@ -200,11 +180,8 @@ public:
 	}
 
 	RadioPanel() {
-		port = new SerialPort();
 	};
 
 	~RadioPanel(void) {
-		port->close();
-		delete port;
 	};
-};
+};*/
