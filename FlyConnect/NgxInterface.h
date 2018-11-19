@@ -125,38 +125,6 @@ static void HandleSimEvent(NgxInterface* ngx, SIMCONNECT_RECV_EVENT* evt) {
 		case EVENT_INPUT_MODE_SW:
 			ngx->send(EVT_CONTROL_STAND_PARK_BRAKE_LEVER, evt->dwData);
 			break;
-
-		case EVENT_INPUT_TGL4_ON:
-			ngx->send(EVT_OH_LIGHTS_ANT_COL, 0);
-			break;
-
-		case EVENT_INPUT_TGL4_OFF:
-			ngx->send(EVT_OH_LIGHTS_ANT_COL, 1);
-			break;
-
-		case EVENT_INPUT_TGL3_ON:
-			ngx->send(EVT_OH_LIGHTS_POS_STROBE, evt->dwData ? MOUSE_FLAG_RIGHTSINGLE : MOUSE_FLAG_RIGHTRELEASE);
-			break;
-
-		case EVENT_INPUT_TGL3_OFF:
-			ngx->send(EVT_OH_LIGHTS_POS_STROBE, evt->dwData ? MOUSE_FLAG_LEFTSINGLE : MOUSE_FLAG_LEFTRELEASE);
-			break;
-
-		case EVENT_INPUT_TGL2_ON:
-			ngx->send(EVT_OH_LIGHTS_LOGO, 0);
-			break;
-
-		case EVENT_INPUT_TGL2_OFF:
-			ngx->send(EVT_OH_LIGHTS_LOGO, 1);
-			break;
-
-		case EVENT_INPUT_TGL1_ON:
-			ngx->send(EVT_OH_LIGHTS_APU_START, 0);
-			break;
-
-		case EVENT_INPUT_TGL1_OFF:
-			ngx->send(EVT_OH_LIGHTS_APU_START, evt->dwData ? MOUSE_FLAG_LEFTSINGLE : MOUSE_FLAG_LEFTRELEASE);
-			break;
 	}
 }
 

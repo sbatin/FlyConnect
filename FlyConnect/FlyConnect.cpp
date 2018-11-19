@@ -101,6 +101,7 @@ void run() {
 		if (panel.read()) {
 			auto mcpInput = &panel.input.mcp;
 			auto mipInput = &panel.input.mip;
+			auto overhead = &panel.input.overhead;
 			printf(">>> Control received, MCP_Enc = %d, MINS = %d\n", mcpInput->value, mipInput->efisMins);
 
 			switch (mcpInput->encoder) {
@@ -176,6 +177,37 @@ void run() {
 			ngx->pressButton(EVT_EFIS_CPT_MTRS, mipInput->efisMTRS);
 			ngx->pressButton(EVT_EFIS_CPT_BARO_STD, mipInput->efisSTD);
 			ngx->pressButton(EVT_EFIS_CPT_MINIMUMS_RST, mipInput->efisRST);
+
+			// Overhead
+			if (overhead->ldg_retract_l != ngx->data.LTS_LandingLtRetractableSw[0]) {
+				ngx->send(EVT_OH_LIGHTS_L_RETRACT, overhead->ldg_retract_l ? 2 : 0);
+			}
+
+			if (overhead->ldg_retract_r != ngx->data.LTS_LandingLtRetractableSw[1]) {
+				ngx->send(EVT_OH_LIGHTS_R_RETRACT, overhead->ldg_retract_r ? 2 : 0);
+			}
+
+			ngx->send(EVT_OH_LIGHTS_L_FIXED, overhead->ldg_fixed_l, ngx->data.LTS_LandingLtFixedSw[0]);
+			ngx->send(EVT_OH_LIGHTS_R_FIXED, overhead->ldg_fixed_r, ngx->data.LTS_LandingLtFixedSw[1]);
+			ngx->send(EVT_OH_LIGHTS_L_TURNOFF, overhead->rw_turnoff_l, ngx->data.LTS_RunwayTurnoffSw[0]);
+			ngx->send(EVT_OH_LIGHTS_R_TURNOFF, overhead->rw_turnoff_r, ngx->data.LTS_RunwayTurnoffSw[1]);
+			ngx->send(EVT_OH_LIGHTS_TAXI, overhead->taxi_light, ngx->data.LTS_TaxiSw);
+			ngx->send(EVT_OH_LIGHTS_LOGO, overhead->logo_light, ngx->data.LTS_LogoSw);
+			ngx->send(EVT_OH_LIGHTS_ANT_COL, overhead->anti_collisn, ngx->data.LTS_AntiCollisionSw);
+			ngx->send(EVT_OH_LIGHTS_WING, overhead->wing_light, ngx->data.LTS_WingSw);
+
+			auto ovhApuSw = toSwitchState(overhead->apu_off, overhead->apu_start);
+			if (ovhApuSw != ngx->data.APU_Selector) {
+				ngx->send(EVT_OH_LIGHTS_APU_START, ovhApuSw);
+			}
+
+			auto ovhPosSw = toSwitchState(overhead->strobe_light, overhead->steady_light);
+			if (ovhPosSw != ngx->data.LTS_PositionSw) {
+				ngx->send(EVT_OH_LIGHTS_POS_STROBE, ovhPosSw);
+			}
+
+			ngx->send(EVT_OH_LIGHTS_L_ENGINE_START, overhead->eng_start_l, ngx->data.ENG_StartSelector[0]);
+			ngx->send(EVT_OH_LIGHTS_R_ENGINE_START, overhead->eng_start_r, ngx->data.ENG_StartSelector[1]);
 		}
 
 		Sleep(50);
@@ -201,7 +233,8 @@ void lab() {
 		panel.mcp.speedCrsL = displayHi(value) & mask & displayLo((float)0.78);
 		panel.mcp.vspeedCrsR = 0xDEFFFFFF & displayLo(-1000);
 		panel.mcp.altitudeHdg = displayHi(counter1) & displayLo(getGaugeValue(value));
-		panel.mcp.backlight = value * 5;
+		panel.mcp.backlight = 0xFF;
+		panel.mip.backlight = 0xFF;
 		panel.mip.annunAntiskidInop = 1;
 		panel.mip.annunATRstRed = 1;
 		panel.mip.annunBelowGS = 1;
@@ -217,7 +250,7 @@ void lab() {
 }
 
 int main() {
-	panel.connect(L"COM6", L"COM9");
+	panel.connect(L"COM6", L"COM9", L"COM5");
 	//lab();
 	run();
 	panel.disconnect();

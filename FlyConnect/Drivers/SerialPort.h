@@ -52,7 +52,7 @@ public:
 
 	~SerialPort(void) {};
 
-	int connect(const wchar_t* path);
+	int connect(const wchar_t* path, DWORD baudRate);
 	int close();
 	template<typename T> void sendData(T* data);
 	template<typename T> int readData(T* dest);
@@ -82,7 +82,7 @@ public:
 	}
 };
 
-int SerialPort::connect(const wchar_t* path) {
+int SerialPort::connect(const wchar_t* path, DWORD baudRate) {
 	DCB dcbSerialParams = {0};
 	COMMTIMEOUTS timeouts = {0};
 
@@ -101,7 +101,7 @@ int SerialPort::connect(const wchar_t* path) {
 		return 0;
 	}
 
-	dcbSerialParams.BaudRate = CBR_19200;
+	dcbSerialParams.BaudRate = baudRate;
 	dcbSerialParams.ByteSize = 8;
 	dcbSerialParams.StopBits = ONESTOPBIT;
 	dcbSerialParams.Parity = NOPARITY;

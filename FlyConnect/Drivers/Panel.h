@@ -56,9 +56,9 @@ static unsigned char decodeRotaryState(unsigned char value) {
 	return 0;
 }
 
-static void connectPort(SerialPort* port, const wchar_t* path, const char* name) {
+static void connectPort(SerialPort* port, const wchar_t* path, const char* name, DWORD baudRate) {
 	printf("%s connecting...\n", name);
-	if (port->connect(path)) {
+	if (port->connect(path, baudRate)) {
 		char *message = port->readMessage();
 		printf("%s connected: %s\n", name, message);
 	}
@@ -69,6 +69,7 @@ enum DisplayState { Blank = 0, Enabled = 1, Overspeed = 2, Underspeed = 3 };
 struct PanelInput {
 	struct mcp_ctrl_t mcp;
 	struct mip_ctrl_t mip;
+	struct overhead_ctrl_t overhead;
 	unsigned char vorAdfSel1;
 	unsigned char vorAdfSel2;
 	unsigned char mainLights;
@@ -81,6 +82,7 @@ class Panel {
 private:
 	SerialPort mipPort;
 	SerialPort mcpPort;
+	SerialPort ovhPort;
 public:
 	struct mcp_data_t mcp;
 	struct mip_data_t mip;
@@ -89,14 +91,16 @@ public:
 	Panel(void) {};
 	~Panel(void) {};
 
-	void connect(const wchar_t* mcpPortPath, const wchar_t* mipPortPath) {
-		connectPort(&mcpPort, mcpPortPath, "MCP");
-		connectPort(&mipPort, mipPortPath, "MIP");
+	void connect(const wchar_t* mcpPortPath, const wchar_t* mipPortPath, const wchar_t* ovhPortPath) {
+		connectPort(&mcpPort, mcpPortPath, "MCP", CBR_19200);
+		connectPort(&mipPort, mipPortPath, "MIP", CBR_19200);
+		connectPort(&ovhPort, ovhPortPath, "OVH", CBR_4800);
 	}
 
 	void disconnect() {
 		mipPort.close();
 		mcpPort.close();
+		ovhPort.close();
 	}
 
 	void lightsTest() {
@@ -198,6 +202,12 @@ public:
 			input.mainLights = toSwitchState(input.mip.lightsTest, input.mip.lightsDim);
 			input.disengageLights = toSwitchState(input.mip.afdsTest1, input.mip.afdsTest2);
 
+			result = true;
+		}
+
+		if (ovhPort.readData(&input.overhead)) {
+			input.overhead.eng_start_l = decodeRotaryState(input.overhead.eng_start_l);
+			input.overhead.eng_start_r = decodeRotaryState(input.overhead.eng_start_r);
 			result = true;
 		}
 

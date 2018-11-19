@@ -28,38 +28,35 @@
 #define MCP_COURSE_FO  5
 
 struct mip_data_t {
-	unsigned char annunFireWarning     : 1;
-	unsigned char /* reserved bits */  : 7;
-	unsigned char annunWarnFltCont     : 1;
-	unsigned char annunWarnElec        : 1;
-	unsigned char annunWarnIRS         : 1;
-	unsigned char annunWarnAPU         : 1;
-	unsigned char annunWarnFuel        : 1;
-	unsigned char annunWarnOvht        : 1;
-	unsigned char annunMasterCaution   : 1;
-	unsigned char /* reserved bits */  : 1;
 	unsigned short flaps;
-	unsigned char annunNGearRed        : 1;
-	unsigned char annunNGearGrn        : 1;
-	unsigned char annunRGearRed        : 1;
-	unsigned char annunRGearGrn        : 1;
-	unsigned char annunLGearRed        : 1;
-	unsigned char annunLGearGrn        : 1;
-	unsigned char /* reserved bits */  : 2;
-	unsigned char annunFlapsTransit    : 1;
-	unsigned char annunFlapsExt        : 1;
-	unsigned char annunAutobreakDisarm : 1;
-	unsigned char annunAntiskidInop    : 1;
-	unsigned char annunStabOutOfTrim   : 1;
-	unsigned char /* reserved bits */  : 3;
-	unsigned char annunBelowGS         : 1;
+	unsigned char annunWarnFltCont     : 1;
+	unsigned char annunWarnIRS         : 1;
+	unsigned char annunWarnFuel        : 1;
+	unsigned char annunMasterCaution   : 1;
+	unsigned char annunFireWarning     : 1;
+	unsigned char annunWarnOvht        : 1;
+	unsigned char annunWarnAPU         : 1;
+	unsigned char annunWarnElec        : 1;
 	unsigned char annunAPRstYel        : 1;
 	unsigned char annunAPRstRed        : 1;
 	unsigned char annunATRstYel        : 1;
 	unsigned char annunATRstRed        : 1;
 	unsigned char annunFMCRstYel       : 1;
-	unsigned char annunSpeedbrakNotArm : 1;
 	unsigned char annunSpeedbrakeArmed : 1;
+	unsigned char annunSpeedbrakNotArm : 1;
+	unsigned char annunStabOutOfTrim   : 1;
+	unsigned char annunAntiskidInop    : 1;
+	unsigned char annunAutobreakDisarm : 1;
+	unsigned char annunBelowGS         : 1;
+	unsigned char /* reserved bits */  : 5;
+	unsigned char annunFlapsExt        : 1;
+	unsigned char annunLGearRed        : 1;
+	unsigned char annunNGearRed        : 1;
+	unsigned char annunRGearRed        : 1;
+	unsigned char annunRGearGrn        : 1;
+	unsigned char annunNGearGrn        : 1;
+	unsigned char annunLGearGrn        : 1;
+	unsigned char annunFlapsTransit    : 1;
 	unsigned char backlight;
 };
 
@@ -87,29 +84,27 @@ struct mcp_data_t {
 	unsigned char backlight;
 };
 
-#pragma pack(push, 1)
 struct mip_ctrl_t {
-	unsigned char /* NC */    : 4;
-	unsigned char gearUP      : 1;
-	unsigned char gearDN      : 1;
-	unsigned char lowerDU     : 2;
-	unsigned char mainPanelDU : 4;
-	unsigned char /* NC */    : 1;
-	unsigned char annunRecall : 1;
-	unsigned char masterCautn : 1;
-	unsigned char fireWarning : 1;
-	unsigned char lightsDim   : 1;
-	unsigned char lightsTest  : 1;
-	unsigned char afdsTest2   : 1;
-	unsigned char afdsTest1   : 1;
-	unsigned char afdsRstFMC  : 1;
-	unsigned char afdsRstAT   : 1;
-	unsigned char afdsRstAP   : 1;
-	unsigned char ffReset     : 1;
 	unsigned char autoBreak   : 5;
 	unsigned char mfdSYS      : 1;
 	unsigned char mfdENG      : 1;
 	unsigned char ffUsed      : 1;
+	unsigned char gearUP      : 1;
+	unsigned char gearDN      : 1;
+	unsigned char ffReset     : 1;
+	unsigned char /* NC */    : 5;
+	unsigned char masterCautn : 1;
+	unsigned char annunRecall : 1;
+	unsigned char mainPanelDU : 4;
+	unsigned char lowerDU     : 2;
+	unsigned char fireWarning : 1;
+	unsigned char lightsTest  : 1;
+	unsigned char lightsDim   : 1;
+	unsigned char afdsTest2   : 1;
+	unsigned char afdsTest1   : 1;
+	unsigned char afdsRstFMC  : 1;
+	unsigned char afdsRstAT   : 1;
+	unsigned char afdsRstAP   : 1;	
 	unsigned char efis_MAP    : 1;
 	unsigned char efis_VOR    : 1;
 	unsigned char /* NC */    : 3;
@@ -136,7 +131,6 @@ struct mip_ctrl_t {
 	unsigned char efisBaro;
 	unsigned char efisMins;
 };
-#pragma pack(pop)
 
 struct mcp_ctrl_t {
 	unsigned char encoder;
@@ -180,4 +174,27 @@ struct radio_data_t {
 	unsigned short atcCode;
 	unsigned char atcMode;
 	unsigned char freqSelected;
+};
+
+struct overhead_ctrl_t {
+	unsigned char eng_ign_r     : 1;
+	unsigned char eng_ign_l     : 1;
+	unsigned char /* NC */      : 1;
+	unsigned char wing_light    : 1;
+	unsigned char anti_collisn  : 1;
+	unsigned char strobe_light  : 1;
+	unsigned char steady_light  : 1;
+	unsigned char logo_light    : 1;
+	unsigned char eng_start_r   : 3;
+	unsigned char /* NC */      : 1;
+	unsigned char eng_start_l   : 3;
+	unsigned char apu_start     : 1;
+	unsigned char ldg_retract_l : 1;
+	unsigned char ldg_retract_r : 1;
+	unsigned char ldg_fixed_l   : 1;
+	unsigned char ldg_fixed_r   : 1;
+	unsigned char rw_turnoff_l  : 1;
+	unsigned char rw_turnoff_r  : 1;
+	unsigned char taxi_light    : 1;
+	unsigned char apu_off       : 1;
 };
