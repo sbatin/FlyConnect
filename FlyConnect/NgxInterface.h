@@ -80,46 +80,34 @@ static void HandleSimEvent(NgxInterface* ngx, SIMCONNECT_RECV_EVENT* evt) {
 	switch (evt->uEventID) {
 		case EVENT_INPUT_SW1:
 			if (evt->dwData) {
-				ngx->send(EVT_OH_LIGHTS_L_RETRACT, 0);
-				ngx->send(EVT_OH_LIGHTS_R_RETRACT, 0);
+				ngx->send(EVT_CONTROL_STAND_ENG1_START_LEVER, 0);
 			}
 			break;
 
 		case EVENT_INPUT_SW2:
 			if (evt->dwData) {
-				ngx->send(EVT_OH_LIGHTS_L_RETRACT, 2);
-				ngx->send(EVT_OH_LIGHTS_R_RETRACT, 2);
+				ngx->send(EVT_CONTROL_STAND_ENG1_START_LEVER, 1);
 			}
 			break;
 
 		case EVENT_INPUT_SW3:
 			if (evt->dwData) {
-				ngx->send(EVT_OH_LIGHTS_L_FIXED, 0);
-				ngx->send(EVT_OH_LIGHTS_R_FIXED, 0);
+				ngx->send(EVT_CONTROL_STAND_ENG2_START_LEVER, 0);
 			}
 			break;
 
 		case EVENT_INPUT_SW4:
 			if (evt->dwData) {
-				ngx->send(EVT_OH_LIGHTS_L_FIXED, 1);
-				ngx->send(EVT_OH_LIGHTS_R_FIXED, 1);
+				ngx->send(EVT_CONTROL_STAND_ENG2_START_LEVER, 1);
 			}
 			break;
 
 		case EVENT_INPUT_SW5:
-			if (evt->dwData) {
-				ngx->send(EVT_OH_LIGHTS_L_TURNOFF, 0);
-				ngx->send(EVT_OH_LIGHTS_R_TURNOFF, 0);
-				ngx->send(EVT_OH_LIGHTS_TAXI, 0);
-			}
+			ngx->send(EVT_FIRE_DETECTION_TEST_SWITCH, evt->dwData ? 2 : 1);
 			break;
 
 		case EVENT_INPUT_SW6:
-			if (evt->dwData) {
-				ngx->send(EVT_OH_LIGHTS_L_TURNOFF, 1);
-				ngx->send(EVT_OH_LIGHTS_R_TURNOFF, 1);
-				ngx->send(EVT_OH_LIGHTS_TAXI, 1);
-			}
+			ngx->send(EVT_FIRE_DETECTION_TEST_SWITCH, evt->dwData ? 0 : 1);
 			break;
 
 		case EVENT_INPUT_MODE_SW:
