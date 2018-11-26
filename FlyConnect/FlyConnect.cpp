@@ -120,6 +120,9 @@ void run() {
 				case MCP_COURSE_FO:
 					ngx->adjust(EVENT_COURSE_SELECTOR_R, mcpInput->value);
 					break;
+				case MCP_VERT_SPEED:
+					ngx->adjust(EVENT_VERTSPEED_SELECTOR, mcpInput->value);
+					break;
 			}
 
 			if (mipInput->gearUP && ngx->data.MAIN_GearLever != 0) ngx->send(EVT_GEAR_LEVER, MOUSE_FLAG_RIGHTSINGLE);
@@ -217,13 +220,13 @@ void run() {
 void lab() {
 	display_test();
 	unsigned char counter1 = 0;
-	unsigned char counter2 = 0;
-	unsigned short value = 0;
+	unsigned char value = 0;
 
 	while (1) {
 		if (panel.read()) {
 			auto ctrl = &panel.input;
 			printf(">>> Control received, Autobreak = %d, EFIS Range = %d, EFIS Mode = %d, Main Panel DU = %d, Lower DU = %d\n", ctrl->mip.autoBreak, ctrl->mip.efisRange, ctrl->efisMode, ctrl->mip.mainPanelDU, ctrl->mip.lowerDU);
+			value+= (char)ctrl->mcp.value;
 		}
 
 		time_t seconds = time(NULL);
@@ -242,9 +245,7 @@ void lab() {
 		panel.mip.annunLGearGrn = 1;
 		panel.send();
 		counter1++;
-		counter2++;
 		if (counter1 == 16) counter1 = 0;
-		if (counter2 == 8) counter2 = 0;
 		Sleep(200);
 	}
 }

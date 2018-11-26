@@ -200,6 +200,7 @@ void NgxInterface::connect() {
 	SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_SPEED_SELECTOR, "#70016");
 	SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_HEADING_SELECTOR, "#70022");
 	SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_ALTITUDE_SELECTOR, "#70032");
+	SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_VERTSPEED_SELECTOR, "#70033");
 	SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_COURSE_SELECTOR_R, "#70041");
 	SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_BARO_SELECTOR_L, "#69997");
 	SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_MINS_SELECTOR_L, "#69987");
