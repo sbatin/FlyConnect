@@ -26,13 +26,13 @@ void Joystick_MapEvents(HANDLE hSimConnect) {
 	Joystick_MapButton(hSimConnect, 8, EVENT_INPUT_SW4);
 	Joystick_MapButton(hSimConnect, 9, EVENT_INPUT_SW5);
 	Joystick_MapButton(hSimConnect, 10, EVENT_INPUT_SW6);
-	Joystick_MapButton(hSimConnect, 11, EVENT_INPUT_TGL1_ON);
-	Joystick_MapButton(hSimConnect, 12, EVENT_INPUT_TGL1_OFF);
-	Joystick_MapButton(hSimConnect, 13, EVENT_INPUT_TGL2_ON);
-	Joystick_MapButton(hSimConnect, 14, EVENT_INPUT_TGL2_OFF);
-	Joystick_MapButton(hSimConnect, 15, EVENT_INPUT_TGL3_ON);
-	Joystick_MapButton(hSimConnect, 16, EVENT_INPUT_TGL3_OFF);
-	Joystick_MapButton(hSimConnect, 17, EVENT_INPUT_TGL4_ON);
-	Joystick_MapButton(hSimConnect, 18, EVENT_INPUT_TGL4_OFF);
+	Joystick_MapButton(hSimConnect, 11, EVENT_INPUT_FLAPS_1);
+	Joystick_MapButton(hSimConnect, 12, EVENT_INPUT_FLAPS_UP);
+	Joystick_MapButton(hSimConnect, 13, EVENT_INPUT_FLAPS_10);
+	Joystick_MapButton(hSimConnect, 14, EVENT_INPUT_FLAPS_15);
+	Joystick_MapButton(hSimConnect, 15, EVENT_INPUT_FLAPS_2);
+	Joystick_MapButton(hSimConnect, 16, EVENT_INPUT_FLAPS_5);
+	Joystick_MapButton(hSimConnect, 17, EVENT_INPUT_FLAPS_30);
+	Joystick_MapButton(hSimConnect, 18, EVENT_INPUT_FLAPS_25);
 	Joystick_MapButton(hSimConnect, 32, EVENT_INPUT_MODE_SW);
 }

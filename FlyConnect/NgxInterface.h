@@ -113,6 +113,54 @@ static void HandleSimEvent(NgxInterface* ngx, SIMCONNECT_RECV_EVENT* evt) {
 		case EVENT_INPUT_MODE_SW:
 			ngx->send(EVT_CONTROL_STAND_PARK_BRAKE_LEVER, evt->dwData);
 			break;
+
+		case EVENT_INPUT_FLAPS_UP:
+			if (evt->dwData) {
+				ngx->send(EVT_CONTROL_STAND_FLAPS_LEVER_0, MOUSE_FLAG_LEFTSINGLE);
+			}
+			break;
+
+		case EVENT_INPUT_FLAPS_1:
+			if (evt->dwData) {
+				ngx->send(EVT_CONTROL_STAND_FLAPS_LEVER_1, MOUSE_FLAG_LEFTSINGLE);
+			}
+			break;
+
+		case EVENT_INPUT_FLAPS_2:
+			if (evt->dwData) {
+				ngx->send(EVT_CONTROL_STAND_FLAPS_LEVER_2, MOUSE_FLAG_LEFTSINGLE);
+			}
+			break;
+
+		case EVENT_INPUT_FLAPS_5:
+			if (evt->dwData) {
+				ngx->send(EVT_CONTROL_STAND_FLAPS_LEVER_5, MOUSE_FLAG_LEFTSINGLE);
+			}
+			break;
+
+		case EVENT_INPUT_FLAPS_10:
+			if (evt->dwData) {
+				ngx->send(EVT_CONTROL_STAND_FLAPS_LEVER_10, MOUSE_FLAG_LEFTSINGLE);
+			}
+			break;
+
+		case EVENT_INPUT_FLAPS_15:
+			if (evt->dwData) {
+				ngx->send(EVT_CONTROL_STAND_FLAPS_LEVER_15, MOUSE_FLAG_LEFTSINGLE);
+			}
+			break;
+
+		case EVENT_INPUT_FLAPS_25:
+			if (evt->dwData) {
+				ngx->send(EVT_CONTROL_STAND_FLAPS_LEVER_25, MOUSE_FLAG_LEFTSINGLE);
+			}
+			break;
+
+		case EVENT_INPUT_FLAPS_30:
+			if (evt->dwData) {
+				ngx->send(EVT_CONTROL_STAND_FLAPS_LEVER_30, MOUSE_FLAG_LEFTSINGLE);
+			}
+			break;
 	}
 }
 
