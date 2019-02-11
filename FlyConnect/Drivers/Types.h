@@ -45,17 +45,18 @@ struct mip_data_t {
 	unsigned char annunSpeedbrakeArmed : 1;
 	unsigned char annunSpeedbrakNotArm : 1;
 	unsigned char annunStabOutOfTrim   : 1;
+	unsigned char /* reserved bits */  : 3;
+	unsigned char annunBelowGS         : 1;
+	unsigned char /* reserved bits */  : 2;
 	unsigned char annunAntiskidInop    : 1;
 	unsigned char annunAutobreakDisarm : 1;
-	unsigned char annunBelowGS         : 1;
-	unsigned char /* reserved bits */  : 5;
 	unsigned char annunFlapsExt        : 1;
-	unsigned char annunLGearRed        : 1;
-	unsigned char annunNGearRed        : 1;
-	unsigned char annunRGearRed        : 1;
-	unsigned char annunRGearGrn        : 1;
-	unsigned char annunNGearGrn        : 1;
 	unsigned char annunLGearGrn        : 1;
+	unsigned char annunNGearGrn        : 1;
+	unsigned char annunRGearGrn        : 1;
+	unsigned char annunRGearRed        : 1;
+	unsigned char annunNGearRed        : 1;
+	unsigned char annunLGearRed        : 1;
 	unsigned char annunFlapsTransit    : 1;
 	unsigned char backlight;
 };
@@ -85,14 +86,15 @@ struct mcp_data_t {
 };
 
 struct mip_ctrl_t {
-	unsigned char autoBreak   : 5;
-	unsigned char mfdSYS      : 1;
-	unsigned char mfdENG      : 1;
 	unsigned char ffUsed      : 1;
+	unsigned char ffReset     : 1;
+	unsigned char /* NC */    : 2;
+	unsigned char mfdENG      : 1;
+	unsigned char mfdSYS      : 1;
 	unsigned char gearUP      : 1;
 	unsigned char gearDN      : 1;
-	unsigned char ffReset     : 1;
-	unsigned char /* NC */    : 5;
+	unsigned char mipN1Sel    : 3;
+	unsigned char autoBreak   : 5;
 	unsigned char masterCautn : 1;
 	unsigned char annunRecall : 1;
 	unsigned char mainPanelDU : 4;
@@ -130,6 +132,9 @@ struct mip_ctrl_t {
 	unsigned char efisWXR     : 1;
 	unsigned char efisBaro;
 	unsigned char efisMins;
+	unsigned char mipN1Set;
+	unsigned char mipSpdRef;
+	unsigned char mipSpdRefSel;
 };
 
 struct mcp_ctrl_t {
