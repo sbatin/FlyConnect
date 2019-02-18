@@ -159,10 +159,11 @@ struct mcp_ctrl_t {
 };
 
 struct radio_ctrl_t {
-	unsigned char enc1;
-	unsigned char enc2;
+	unsigned char encWhole;
+	unsigned char encFract;
 	unsigned char freqSelected;
-	unsigned char atcMode;
+	unsigned char freqSwap;
+	unsigned char buttons;
 };
 
 struct frequency_t {
@@ -175,10 +176,8 @@ struct radio_data_t {
 	frequency_t com2;
 	frequency_t nav1;
 	frequency_t nav2;
-	frequency_t adf1;
-	unsigned short atcCode;
-	unsigned char atcMode;
-	unsigned char freqSelected;
+	unsigned short adf1;
+	unsigned short atc1;
 };
 
 struct overhead_ctrl_t {

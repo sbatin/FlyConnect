@@ -214,3 +214,65 @@ public:
 		return result;
 	}
 };
+
+class RadioPanel {
+private:
+	struct radio_data_t prevData;
+	SerialPort port;
+public:
+	struct radio_data_t data;
+	struct radio_ctrl_t ctrl;
+	unsigned char XPDR_ModeSel;
+
+	void connect(const wchar_t* path) {
+		printf("Radio panel connecting...\n");
+		if (port.connect(path, 76800)) {
+			char *message = port.readMessage();
+			printf("Radio panel connected: %s\n", message);
+		}
+	}
+
+	void update() {
+		if (memcmp(&data, &prevData, sizeof(radio_data_t))) {
+			port.sendData(&data);
+			printf("Radio panel update: %d\n", data.nav1.active);
+			memcpy(&prevData, &data, sizeof(radio_data_t));
+		}
+	}
+
+	bool read() {
+		if (port.readData(&ctrl)) {
+			ctrl.encWhole = -ctrl.encWhole;
+
+			switch (ctrl.buttons) {
+				case 0x80:
+					XPDR_ModeSel = 1;
+					break;
+				case 0x40:
+					XPDR_ModeSel = 2;
+					break;
+				case 0x20:
+					XPDR_ModeSel = 3;
+					break;
+				case 0x10:
+					XPDR_ModeSel = 4;
+					break;
+				case 0x01:
+					XPDR_ModeSel = 0;
+					break;
+				default:
+					break;
+			}
+
+			return true;
+		}
+
+		return false;
+	}
+
+	RadioPanel() {
+	};
+
+	~RadioPanel(void) {
+	};
+};

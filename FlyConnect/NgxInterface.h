@@ -74,6 +74,18 @@ public:
 			printf("Received control: %d %d\n", pS->Event, pS->Parameter);
 		}*/
 	}
+
+	void requestRadioData() {
+		SimConnect_RequestDataOnSimObjectType(hSimConnect, RADIO_REQUEST, RADIO_DEF, 0, SIMCONNECT_SIMOBJECT_TYPE_USER);
+	}
+
+	void radioToggle(EVENT_ID evt) {
+		RadioInterface::toggle(hSimConnect, evt);
+	}
+
+	void radioRotate(char val, EVENT_ID inc, EVENT_ID dec) {
+		RadioInterface::rotate(hSimConnect, val, inc, dec);
+	}
 };
 
 static void HandleSimEvent(NgxInterface* ngx, SIMCONNECT_RECV_EVENT* evt) {
@@ -260,7 +272,6 @@ void NgxInterface::connect() {
 void NgxInterface::pollForData() {
 	while (connected) {
 		SimConnect_CallDispatch(hSimConnect, MyDispatchProc, this);
-		//SimConnect_RequestDataOnSimObjectType(hSimConnect, RADIO_REQUEST, RADIO_DEF, 0, SIMCONNECT_SIMOBJECT_TYPE_USER);
 		Sleep(10);
 	}
 }

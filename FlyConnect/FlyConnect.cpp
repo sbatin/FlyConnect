@@ -7,6 +7,7 @@
 #include "NgxInterface.h"
 
 Panel panel = Panel();
+RadioPanel radio = RadioPanel();
 
 void sendNGX_PanelState(PMDG_NGX_Data* state) {
 	auto seconds = time(NULL);
@@ -80,10 +81,10 @@ void sendNGX_PanelState(PMDG_NGX_Data* state) {
 	// test
 	if (state->MAIN_LightsSelector == 0 && state->ELEC_BatSelector > 0) {
 		panel.lightsTest();
-		// bright
+	// bright
 	} else if (state->MAIN_LightsSelector == 1) {
 		panel.mcp.brightness = 8;
-		// dim
+	// dim
 	} else if (state->MAIN_LightsSelector == 2) {
 		panel.mcp.brightness = 5;
 	}
@@ -97,6 +98,49 @@ void run() {
 
 	while (ngx->connected) {
 		sendNGX_PanelState(&ngx->data);
+
+		radio.data.com1.active = round(ngx->radio.COM1_Active * 100.0);
+		radio.data.com1.standby = round(ngx->radio.COM1_StandBy * 100.0);
+		radio.data.com2.active = round(ngx->radio.COM2_Active * 100.0);
+		radio.data.com2.standby = round(ngx->radio.COM2_StandBy * 100.0);
+		radio.data.nav1.active = round(ngx->radio.NAV1_Active * 100.0);
+		radio.data.nav1.standby = round(ngx->radio.NAV1_StandBy * 100.0);
+		radio.data.nav2.active = round(ngx->radio.NAV2_Active * 100.0);
+		radio.data.nav2.standby = round(ngx->radio.NAV2_StandBy * 100.0);
+		radio.data.adf1 = round(ngx->radio.ADF1_Active * 10.0);
+		radio.data.atc1 = round(ngx->radio.Transponder);
+		radio.update();
+		ngx->requestRadioData();
+
+		if (radio.read()) {
+			auto freqSelected = radio.ctrl.freqSelected;
+
+			if (radio.ctrl.freqSwap == 1) ngx->radioToggle(EVENT_COM1_RADIO_SWAP);
+			if (radio.ctrl.freqSwap == 2) ngx->radioToggle(EVENT_NAV1_RADIO_SWAP);
+			if (radio.ctrl.freqSwap == 4) ngx->radioToggle(EVENT_COM2_RADIO_SWAP);
+			if (radio.ctrl.freqSwap == 5) ngx->radioToggle(EVENT_NAV2_RADIO_SWAP);
+
+			if (radio.ctrl.encWhole) {
+				if (freqSelected == 1) ngx->radioRotate(radio.ctrl.encWhole, EVENT_COM1_RADIO_WHOLE_INC, EVENT_COM1_RADIO_WHOLE_DEC);
+				if (freqSelected == 2) ngx->radioRotate(radio.ctrl.encWhole, EVENT_NAV1_RADIO_WHOLE_INC, EVENT_NAV1_RADIO_WHOLE_DEC);
+				if (freqSelected == 3) ngx->radioRotate(radio.ctrl.encWhole, EVENT_ADF1_RADIO_WHOLE_INC, EVENT_ADF1_RADIO_WHOLE_DEC);
+				if (freqSelected == 4) ngx->radioRotate(radio.ctrl.encWhole, EVENT_COM2_RADIO_WHOLE_INC, EVENT_COM2_RADIO_WHOLE_DEC);
+				if (freqSelected == 5) ngx->radioRotate(radio.ctrl.encWhole, EVENT_NAV2_RADIO_WHOLE_INC, EVENT_NAV2_RADIO_WHOLE_DEC);
+				//if (freqSelected == 6) sendLinearIncDecEvent(hSimConnect, ctrl.enc2, EVENT_ATC1_RADIO_WHOLE_INC, EVENT_ATC1_RADIO_WHOLE_DEC);
+				if (freqSelected == 6) for (int i = 0; i < 64; i++) ngx->radioRotate(radio.ctrl.encWhole, EVENT_ATC1_RADIO_FRACT_INC, EVENT_ATC1_RADIO_FRACT_DEC);
+			}
+
+			if (radio.ctrl.encFract) {
+				if (freqSelected == 1) ngx->radioRotate(radio.ctrl.encFract, EVENT_COM1_RADIO_FRACT_INC, EVENT_COM1_RADIO_FRACT_DEC);
+				if (freqSelected == 2) ngx->radioRotate(radio.ctrl.encFract, EVENT_NAV1_RADIO_FRACT_INC, EVENT_NAV1_RADIO_FRACT_DEC);
+				if (freqSelected == 3) ngx->radioRotate(radio.ctrl.encFract, EVENT_ADF1_RADIO_FRACT_INC, EVENT_ADF1_RADIO_FRACT_DEC);
+				if (freqSelected == 4) ngx->radioRotate(radio.ctrl.encFract, EVENT_COM2_RADIO_FRACT_INC, EVENT_COM2_RADIO_FRACT_DEC);
+				if (freqSelected == 5) ngx->radioRotate(radio.ctrl.encFract, EVENT_NAV2_RADIO_FRACT_INC, EVENT_NAV2_RADIO_FRACT_DEC);
+				if (freqSelected == 6) ngx->radioRotate(radio.ctrl.encFract, EVENT_ATC1_RADIO_FRACT_INC, EVENT_ATC1_RADIO_FRACT_DEC);
+			}
+
+			ngx->send(EVT_TCAS_MODE, radio.XPDR_ModeSel, ngx->data.XPDR_ModeSel);
+		}
 
 		if (panel.read()) {
 			auto mcpInput = &panel.input.mcp;
@@ -164,8 +208,8 @@ void run() {
 			ngx->pressButton(EVT_SYSTEM_ANNUNCIATOR_PANEL_LEFT, mipInput->annunRecall);
 
 			// EFIS
-			ngx->adjust(EVENT_BARO_SELECTOR_L, mipInput->efisBaro);
-			ngx->adjust(EVENT_MINS_SELECTOR_L, mipInput->efisMins);
+			ngx->adjust(EVENT_BARO_SELECTOR_L, mipInput->efisBaro * (-1));
+			ngx->adjust(EVENT_MINS_SELECTOR_L, mipInput->efisMins * (-1));
 			ngx->send(EVT_EFIS_CPT_MODE, panel.input.efisMode, ngx->data.EFIS_ModeSel[0]);
 			ngx->send(EVT_EFIS_CPT_RANGE, mipInput->efisRange, ngx->data.EFIS_RangeSel[0]);
 			ngx->pressButton(EVT_EFIS_CPT_WXR, mipInput->efisWXR);
@@ -242,7 +286,7 @@ void lab() {
 		panel.mip.annunATRstRed = 1;
 		panel.mip.annunBelowGS = 1;
 		panel.mip.annunFlapsTransit = 1;
-		panel.mip.annunLGearGrn = 1;
+		panel.mip.annunLGearRed = 1;
 		panel.send();
 		counter1++;
 		if (counter1 == 16) counter1 = 0;
@@ -250,10 +294,85 @@ void lab() {
 	}
 }
 
+void testRadio() {
+	radio.data.com1.active = 11800;
+	radio.data.com1.standby = 13697;
+	radio.data.com2.active = 13697;
+	radio.data.com2.standby = 11800;
+	radio.data.nav1.active = 10800;
+	radio.data.nav1.standby = 11795;
+	radio.data.nav2.active = 11795;
+	radio.data.nav2.standby = 10800;
+	radio.data.adf1 = 2660;
+	radio.data.atc1 = 1200;
+	radio.update();
+
+	while (1) {
+		if (radio.read()) {
+			printf(">>> Control received: freq = %d; swap = %d; buttons = %x\n", radio.ctrl.freqSelected, radio.ctrl.freqSwap, radio.ctrl.buttons);
+		}
+		Sleep(100);
+	}
+}
+
 int main() {
 	panel.connect(L"COM6", L"COM9", L"COM5");
+	radio.connect(L"\\\\.\\COM14");
 	//lab();
+	//testRadio();
 	run();
 	panel.disconnect();
+	return 0;
+}
+
+struct mip_data_test {
+	unsigned short flaps;
+	unsigned short reserved;
+	unsigned short value;
+	unsigned char backlight;
+};
+
+struct mip_ctrl_test {
+	unsigned short value;
+	unsigned short _mipLo;
+	unsigned short _efisHi;
+	unsigned short _efisLo;
+	unsigned short _efisEnc;
+	unsigned char mipEncoders[2];
+	unsigned char mipSpdRefSw;
+};
+
+int main2() {
+	radio_data_t mipData;
+	radio_ctrl_t mipCtrl;
+	SerialPort mipPort;
+	mipPort.connect(L"COM7", 76800);
+	mipData.nav1.active = 11730;
+	mipData.nav1.standby = 11280;
+	mipData.atc1 = 7856;
+
+	unsigned char counter1 = 0;
+	unsigned char value = 0;
+
+	while (1) {
+		//auto ch = getchar();
+		//printf(">>> counter1 = %d\n", counter1);
+
+		/*if (mipPort.readData(&mipCtrl)) {
+			printf(">>> Control received %x; encoders = %d, %d; SPD REF = %x\n", mipCtrl.value, mipCtrl.mipEncoders[0], mipCtrl.mipEncoders[1], mipCtrl.mipSpdRefSw);
+			for (int i = 0; i < 16; i++) {
+				if (mipCtrl.value & (1 << i)) {
+					printf(">>> bit %d\n", i);
+				}
+			}
+		}*/
+
+		//mipData.value = (1 << counter1);
+		mipPort.sendData(&mipData);
+		counter1++;
+		if (counter1 == 16) counter1 = 0;
+		Sleep(100);
+	}
+
 	return 0;
 }
