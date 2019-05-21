@@ -21,11 +21,13 @@
 #pragma once
 
 #define MCP_ALTITUDE   0
-#define MCP_HEADING    1
-#define MCP_IAS_MACH   2
-#define MCP_COURSE_CA  3
-#define MCP_VERT_SPEED 4
-#define MCP_COURSE_FO  5
+#define MCP_IAS_MACH   1
+#define MCP_COURSE_CA  2
+#define EFIS_BARO      3
+#define EFIS_MINS      4
+#define MCP_VERT_SPEED 5
+#define MCP_COURSE_FO  6
+#define MCP_HEADING    7
 
 struct mip_data_t {
 	unsigned short flaps;
@@ -61,29 +63,33 @@ struct mip_data_t {
 	unsigned char backlight;
 };
 
+#pragma pack(push, 1)
 struct mcp_data_t {
-	unsigned long altitudeHdg;
 	unsigned long vspeedCrsR;
+	unsigned long altitudeHdg;
 	unsigned long speedCrsL;
-	unsigned char lnav     : 1;
-	unsigned char vor_loc  : 1;
-	unsigned char alt_hld  : 1;
-	unsigned char vs       : 1;
-	unsigned char cmd_a    : 1;
-	unsigned char cmd_b    : 1;
-	unsigned char fd_fo    : 1;
-	unsigned char /* NC */ : 1;
-	unsigned char at_arm   : 1;
-	unsigned char fd_ca    : 1;
-	unsigned char n1       : 1;
-	unsigned char speed    : 1;
-	unsigned char vnav     : 1;
-	unsigned char lvl_chg  : 1;
-	unsigned char hdg_sel  : 1;
-	unsigned char app      : 1;
-	unsigned char brightness;
+	unsigned char alt_hld     : 1;
+	unsigned char vs          : 1;
+	unsigned char fd_fo       : 1;
+	unsigned char cws_a       : 1;
+	unsigned char cws_b       : 1;
+	unsigned char cmd_b       : 1;
+	unsigned char cmd_a       : 1;
+	unsigned char lnav        : 1;
+	unsigned char fd_ca       : 1;
+	unsigned char n1          : 1;
+	unsigned char speed       : 1;
+	unsigned char lvl_chg     : 1;
+	unsigned char hdg_sel     : 1;
+	unsigned char app         : 1;
+	unsigned char vor_loc     : 1;
+	unsigned char vnav        : 1;
+	unsigned char at_arm      : 1;
+	unsigned char reserved    : 3;
+	unsigned char brightness  : 4;
 	unsigned char backlight;
 };
+#pragma pack(pop)
 
 struct mip_ctrl_t {
 	unsigned char ffUsed      : 1;
@@ -106,57 +112,62 @@ struct mip_ctrl_t {
 	unsigned char afdsTest1   : 1;
 	unsigned char afdsRstFMC  : 1;
 	unsigned char afdsRstAT   : 1;
-	unsigned char afdsRstAP   : 1;	
-	unsigned char efis_MAP    : 1;
-	unsigned char efis_VOR    : 1;
-	unsigned char /* NC */    : 3;
-	unsigned char efisSTD     : 1;
-	unsigned char efisRST     : 1;
-	unsigned char efis_PLN    : 1;
-	unsigned char efisRange;
-	unsigned char efisPOS     : 1;
-	unsigned char efisDATA    : 1;
-	unsigned char efisARPT    : 1;
-	unsigned char /* NC */    : 1;
-	unsigned char efisVOR2    : 1;
-	unsigned char efisADF2    : 1;
-	unsigned char /* NC */    : 1;
-	unsigned char efisMTRS    : 1;
-	unsigned char efisFPV     : 1;
-	unsigned char /* NC */    : 1;
-	unsigned char efisADF1    : 1;
-	unsigned char efisVOR1    : 1;
-	unsigned char efisTERR    : 1;
-	unsigned char efisWPT     : 1;
-	unsigned char efisSTA     : 1;
-	unsigned char efisWXR     : 1;
-	unsigned char efisBaro;
-	unsigned char efisMins;
+	unsigned char afdsRstAP   : 1;
 	unsigned char mipN1Set;
 	unsigned char mipSpdRef;
 	unsigned char mipSpdRefSel;
 };
 
+#pragma pack(push, 1)
 struct mcp_ctrl_t {
 	unsigned char encoder;
 	unsigned char value;
-	unsigned char lnav     : 1;
+	// MCP buttons mapping
+	unsigned char hdg_sel  : 1;
+	unsigned char app      : 1;
 	unsigned char vor_loc  : 1;
-	unsigned char alt_hld  : 1;
-	unsigned char vs       : 1;
-	unsigned char cmd_a    : 1;
-	unsigned char cmd_b    : 1;
-	unsigned char fd_fo    : 1;
-	unsigned char /* NC */ : 1;
-	unsigned char at_arm   : 1;
+	unsigned char spd_intv : 1;
 	unsigned char fd_ca    : 1;
 	unsigned char n1       : 1;
 	unsigned char speed    : 1;
-	unsigned char vnav     : 1;
 	unsigned char lvl_chg  : 1;
-	unsigned char hdg_sel  : 1;
-	unsigned char app      : 1;
+	unsigned char cmd_b    : 1;
+	unsigned char cmd_a    : 1;
+	unsigned char cws_b    : 1;
+	unsigned char cws_a    : 1;
+	unsigned char fd_fo    : 1;
+	unsigned char alt_hld  : 1;
+	unsigned char vs       : 1;
+	unsigned char alt_intv : 1;
+	unsigned char at_arm   : 1;
+	unsigned char vnav     : 1;
+	unsigned char lnav     : 1;
+	unsigned char speed_co : 1;
+	unsigned char /* NC */ : 4;
+	// EFIS buttons mapping
+	unsigned char efisRST  : 1;
+	unsigned char efisSTD  : 1;
+	unsigned char /* NC */ : 2;
+	unsigned char efisMode : 4;
+	unsigned char efisRange;
+	unsigned char efisPOS  : 1;
+	unsigned char efisDATA : 1;
+	unsigned char efisARPT : 1;
+	unsigned char /* NC */ : 1;
+	unsigned char efisVOR2 : 1;
+	unsigned char efisADF2 : 1;
+	unsigned char /* NC */ : 1;
+	unsigned char efisMTRS : 1;
+	unsigned char efisFPV  : 1;
+	unsigned char /* NC */ : 1;
+	unsigned char efisADF1 : 1;
+	unsigned char efisVOR1 : 1;
+	unsigned char efisTERR : 1;
+	unsigned char efisWPT  : 1;
+	unsigned char efisSTA  : 1;
+	unsigned char efisWXR  : 1;
 };
+#pragma pack(pop)
 
 struct radio_ctrl_t {
 	unsigned char encWhole;
@@ -177,7 +188,8 @@ struct radio_data_t {
 	frequency_t nav1;
 	frequency_t nav2;
 	unsigned short adf1;
-	unsigned short atc1;
+	unsigned short brk1 : 1;
+	unsigned short atc1 : 15;
 };
 
 struct overhead_ctrl_t {

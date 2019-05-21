@@ -75,7 +75,6 @@ struct PanelInput {
 	unsigned char mainLights;
 	unsigned char disengageLights;
 	unsigned char fuelFlowSw;
-	unsigned char efisMode;
 };
 
 class Panel {
@@ -92,7 +91,9 @@ public:
 	~Panel(void) {};
 
 	void connect(const wchar_t* mcpPortPath, const wchar_t* mipPortPath, const wchar_t* ovhPortPath) {
-		connectPort(&mcpPort, mcpPortPath, "MCP", CBR_19200);
+		if (mcpPort.connect(mcpPortPath, CBR_115200)) {
+			printf("MCP connected:\n");
+		}
 		connectPort(&mipPort, mipPortPath, "MIP", CBR_19200);
 		connectPort(&ovhPort, ovhPortPath, "OVH", CBR_4800);
 	}
@@ -114,6 +115,8 @@ public:
 		mcp.at_arm = 1;
 		mcp.cmd_a = 1;
 		mcp.cmd_b = 1;
+		mcp.cws_a = 1;
+		mcp.cws_b = 1;
 		mcp.fd_ca = 1;
 		mcp.fd_fo = 1;
 		mcp.hdg_sel = 1;
@@ -167,37 +170,30 @@ public:
 	}
 
 	void send() {
-		mcpPort.sendData(&mcp);
+		mcpPort.sendDataRaw(&mcp);
 		mipPort.sendData(&mip);
 	}
 
 	bool read() {
 		bool result = false;
 
-		input.mip.efisBaro = 0;
-		input.mip.efisMins = 0;
 		input.mcp.value = 0;
 
-		if (mcpPort.readData(&input.mcp)) {
+		unsigned char prevMode = input.mcp.efisMode;
+		unsigned char prevRange = input.mcp.efisRange;
+
+		if (mcpPort.readDataRaw(&input.mcp)) {
+			input.mcp.efisMode = input.mcp.efisMode ? decodeRotaryState(input.mcp.efisMode) - 1 : prevMode;
+			input.mcp.efisRange = input.mcp.efisRange ? decodeRotaryState(input.mcp.efisRange) - 1 : prevRange;
+			input.vorAdfSel1 = toSwitchState(input.mcp.efisVOR1, input.mcp.efisADF1);
+			input.vorAdfSel2 = toSwitchState(input.mcp.efisVOR2, input.mcp.efisADF2);
 			result = true;
 		}
 
 		if (mipPort.readData(&input.mip)) {
-			if (input.mip.efis_VOR)
-				input.efisMode = 1;
-			else if (input.mip.efis_MAP)
-				input.efisMode = 2;
-			else if (input.mip.efis_PLN)
-				input.efisMode = 3;
-			else
-				input.efisMode = 0;
-
-			input.mip.efisRange = decodeRotaryState(input.mip.efisRange);
 			input.mip.autoBreak = decodeRotaryState(input.mip.autoBreak);
 			input.mip.mainPanelDU = decodeRotaryState(input.mip.mainPanelDU);
 			input.mip.lowerDU = decodeRotaryState(input.mip.lowerDU);
-			input.vorAdfSel1 = toSwitchState(input.mip.efisVOR1, input.mip.efisADF1);
-			input.vorAdfSel2 = toSwitchState(input.mip.efisVOR2, input.mip.efisADF2);
 			input.fuelFlowSw = toSwitchState(input.mip.ffReset, input.mip.ffUsed);
 			input.mainLights = toSwitchState(input.mip.lightsTest, input.mip.lightsDim);
 			input.disengageLights = toSwitchState(input.mip.afdsTest1, input.mip.afdsTest2);
@@ -219,25 +215,40 @@ class RadioPanel {
 private:
 	struct radio_data_t prevData;
 	SerialPort port;
+	const unsigned short navMin = 10800;
+	const unsigned short navMax = 11795;
+	const unsigned short vhfMin = 11800;
+	const unsigned short vhfMax = 13697;
 public:
 	struct radio_data_t data;
 	struct radio_ctrl_t ctrl;
 	unsigned char XPDR_ModeSel;
 
 	void connect(const wchar_t* path) {
-		printf("Radio panel connecting...\n");
+		data.com1.active = vhfMin;
+		data.com1.standby = vhfMax;
+		data.com2.active = vhfMax;
+		data.com2.standby = vhfMin;
+		data.nav1.active = navMin;
+		data.nav1.standby = navMax;
+		data.nav2.active = navMax;
+		data.nav2.standby = navMin;
+		data.adf1 = 1900;
+		data.atc1 = 7777;
+
+		printf("VHF connecting...\n");
 		if (port.connect(path, 76800)) {
 			char *message = port.readMessage();
-			printf("Radio panel connected: %s\n", message);
+			printf("VHF connected: %s\n", message);
 		}
 	}
 
 	void update() {
-		if (memcmp(&data, &prevData, sizeof(radio_data_t))) {
+		port.sendData(&data);
+		/*if (memcmp(&data, &prevData, sizeof(radio_data_t))) {
 			port.sendData(&data);
-			printf("Radio panel update: %d\n", data.nav1.active);
 			memcpy(&prevData, &data, sizeof(radio_data_t));
-		}
+		}*/
 	}
 
 	bool read() {

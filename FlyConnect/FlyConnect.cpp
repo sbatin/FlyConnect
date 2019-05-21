@@ -36,6 +36,8 @@ void sendNGX_PanelState(PMDG_NGX_Data* state) {
 	panel.mcp.at_arm = state->MCP_ATArmSw;
 	panel.mcp.cmd_a = state->MCP_annunCMD_A;
 	panel.mcp.cmd_b = state->MCP_annunCMD_B;
+	panel.mcp.cws_a = state->MCP_annunCWS_A;
+	panel.mcp.cws_b = state->MCP_annunCWS_B;
 	panel.mcp.fd_ca = state->MCP_annunFD[0];
 	panel.mcp.fd_fo = state->MCP_annunFD[1];
 	panel.mcp.hdg_sel = state->MCP_annunHDG_SEL;
@@ -123,10 +125,9 @@ void run() {
 			if (radio.ctrl.encWhole) {
 				if (freqSelected == 1) ngx->radioRotate(radio.ctrl.encWhole, EVENT_COM1_RADIO_WHOLE_INC, EVENT_COM1_RADIO_WHOLE_DEC);
 				if (freqSelected == 2) ngx->radioRotate(radio.ctrl.encWhole, EVENT_NAV1_RADIO_WHOLE_INC, EVENT_NAV1_RADIO_WHOLE_DEC);
-				if (freqSelected == 3) ngx->radioRotate(radio.ctrl.encWhole, EVENT_ADF1_RADIO_WHOLE_INC, EVENT_ADF1_RADIO_WHOLE_DEC);
+				if (freqSelected == 3) for (int i = 0; i < 10; i++) ngx->radioRotate(radio.ctrl.encWhole, EVENT_ADF1_RADIO_WHOLE_INC, EVENT_ADF1_RADIO_WHOLE_DEC);
 				if (freqSelected == 4) ngx->radioRotate(radio.ctrl.encWhole, EVENT_COM2_RADIO_WHOLE_INC, EVENT_COM2_RADIO_WHOLE_DEC);
 				if (freqSelected == 5) ngx->radioRotate(radio.ctrl.encWhole, EVENT_NAV2_RADIO_WHOLE_INC, EVENT_NAV2_RADIO_WHOLE_DEC);
-				//if (freqSelected == 6) sendLinearIncDecEvent(hSimConnect, ctrl.enc2, EVENT_ATC1_RADIO_WHOLE_INC, EVENT_ATC1_RADIO_WHOLE_DEC);
 				if (freqSelected == 6) for (int i = 0; i < 64; i++) ngx->radioRotate(radio.ctrl.encWhole, EVENT_ATC1_RADIO_FRACT_INC, EVENT_ATC1_RADIO_FRACT_DEC);
 			}
 
@@ -146,26 +147,32 @@ void run() {
 			auto mcpInput = &panel.input.mcp;
 			auto mipInput = &panel.input.mip;
 			auto overhead = &panel.input.overhead;
-			printf(">>> Control received, MCP_Enc = %d, MINS = %d\n", mcpInput->value, mipInput->efisMins);
+			printf(">>> Control received, MCP_Enc_Val = %d, MCP_Enc_Num = %d\n", mcpInput->value, mcpInput->encoder);
 
 			switch (mcpInput->encoder) {
 				case MCP_ALTITUDE:
-					ngx->adjust(EVENT_ALTITUDE_SELECTOR, mcpInput->value);
+					ngx->adjust(EVENT_ALTITUDE_SELECTOR, mcpInput->value * (-1));
 					break;
 				case MCP_HEADING:
-					ngx->adjust(EVENT_HEADING_SELECTOR, mcpInput->value);
+					ngx->adjust(EVENT_HEADING_SELECTOR, mcpInput->value * (-1));
 					break;
 				case MCP_IAS_MACH:
-					ngx->adjust(EVENT_SPEED_SELECTOR, mcpInput->value);
+					ngx->adjust(EVENT_SPEED_SELECTOR, mcpInput->value * (-1));
 					break;
 				case MCP_COURSE_CA:
-					ngx->adjust(EVENT_COURSE_SELECTOR_L, mcpInput->value);
+					ngx->adjust(EVENT_COURSE_SELECTOR_L, mcpInput->value * (-1));
 					break;
 				case MCP_COURSE_FO:
-					ngx->adjust(EVENT_COURSE_SELECTOR_R, mcpInput->value);
+					ngx->adjust(EVENT_COURSE_SELECTOR_R, mcpInput->value * (-1));
 					break;
 				case MCP_VERT_SPEED:
-					ngx->adjust(EVENT_VERTSPEED_SELECTOR, mcpInput->value);
+					ngx->adjust(EVENT_VERTSPEED_SELECTOR, mcpInput->value * (-1));
+					break;
+				case EFIS_BARO:
+					ngx->adjust(EVENT_BARO_SELECTOR_L, mcpInput->value * (-1));
+					break;
+				case EFIS_MINS:
+					ngx->adjust(EVENT_MINS_SELECTOR_L, mcpInput->value * (-1));
 					break;
 			}
 
@@ -187,7 +194,12 @@ void run() {
 			ngx->pressButton(EVT_MCP_ALT_HOLD_SWITCH, mcpInput->alt_hld);
 			ngx->pressButton(EVT_MCP_CMD_A_SWITCH, mcpInput->cmd_a);
 			ngx->pressButton(EVT_MCP_CMD_B_SWITCH, mcpInput->cmd_b);
+			ngx->pressButton(EVT_MCP_CWS_A_SWITCH, mcpInput->cws_a);
+			ngx->pressButton(EVT_MCP_CWS_B_SWITCH, mcpInput->cws_b);
 			ngx->pressButton(EVT_MCP_VS_SWITCH, mcpInput->vs);
+			ngx->pressButton(EVT_MCP_ALT_INTV_SWITCH, mcpInput->alt_intv);
+			ngx->pressButton(EVT_MCP_CO_SWITCH, mcpInput->speed_co);
+			ngx->pressButton(EVT_MCP_SPD_INTV_SWITCH, mcpInput->spd_intv);
 
 			// MIP
 			ngx->pressButton(EVT_MPM_MFD_ENG_BUTTON, mipInput->mfdENG);
@@ -208,22 +220,20 @@ void run() {
 			ngx->pressButton(EVT_SYSTEM_ANNUNCIATOR_PANEL_LEFT, mipInput->annunRecall);
 
 			// EFIS
-			ngx->adjust(EVENT_BARO_SELECTOR_L, mipInput->efisBaro * (-1));
-			ngx->adjust(EVENT_MINS_SELECTOR_L, mipInput->efisMins * (-1));
-			ngx->send(EVT_EFIS_CPT_MODE, panel.input.efisMode, ngx->data.EFIS_ModeSel[0]);
-			ngx->send(EVT_EFIS_CPT_RANGE, mipInput->efisRange, ngx->data.EFIS_RangeSel[0]);
-			ngx->pressButton(EVT_EFIS_CPT_WXR, mipInput->efisWXR);
-			ngx->pressButton(EVT_EFIS_CPT_STA, mipInput->efisSTA);
-			ngx->pressButton(EVT_EFIS_CPT_WPT, mipInput->efisWPT);
-			ngx->pressButton(EVT_EFIS_CPT_ARPT, mipInput->efisARPT);
-			ngx->pressButton(EVT_EFIS_CPT_DATA, mipInput->efisDATA);
-			ngx->pressButton(EVT_EFIS_CPT_POS, mipInput->efisPOS);
-			ngx->pressButton(EVT_EFIS_CPT_TERR, mipInput->efisTERR);
-			ngx->pressButton(EVT_EFIS_CPT_WXR, mipInput->efisWXR);
-			ngx->pressButton(EVT_EFIS_CPT_FPV, mipInput->efisFPV);
-			ngx->pressButton(EVT_EFIS_CPT_MTRS, mipInput->efisMTRS);
-			ngx->pressButton(EVT_EFIS_CPT_BARO_STD, mipInput->efisSTD);
-			ngx->pressButton(EVT_EFIS_CPT_MINIMUMS_RST, mipInput->efisRST);
+			ngx->send(EVT_EFIS_CPT_MODE, mcpInput->efisMode, ngx->data.EFIS_ModeSel[0]);
+			ngx->send(EVT_EFIS_CPT_RANGE, mcpInput->efisRange, ngx->data.EFIS_RangeSel[0]);
+			ngx->pressButton(EVT_EFIS_CPT_WXR, mcpInput->efisWXR);
+			ngx->pressButton(EVT_EFIS_CPT_STA, mcpInput->efisSTA);
+			ngx->pressButton(EVT_EFIS_CPT_WPT, mcpInput->efisWPT);
+			ngx->pressButton(EVT_EFIS_CPT_ARPT, mcpInput->efisARPT);
+			ngx->pressButton(EVT_EFIS_CPT_DATA, mcpInput->efisDATA);
+			ngx->pressButton(EVT_EFIS_CPT_POS, mcpInput->efisPOS);
+			ngx->pressButton(EVT_EFIS_CPT_TERR, mcpInput->efisTERR);
+			ngx->pressButton(EVT_EFIS_CPT_WXR, mcpInput->efisWXR);
+			ngx->pressButton(EVT_EFIS_CPT_FPV, mcpInput->efisFPV);
+			ngx->pressButton(EVT_EFIS_CPT_MTRS, mcpInput->efisMTRS);
+			ngx->pressButton(EVT_EFIS_CPT_BARO_STD, mcpInput->efisSTD);
+			ngx->pressButton(EVT_EFIS_CPT_MINIMUMS_RST, mcpInput->efisRST);
 
 			// Overhead
 			if (overhead->ldg_retract_l != ngx->data.LTS_LandingLtRetractableSw[0]) {
@@ -269,8 +279,12 @@ void lab() {
 	while (1) {
 		if (panel.read()) {
 			auto ctrl = &panel.input;
-			printf(">>> Control received, Autobreak = %d, EFIS Range = %d, EFIS Mode = %d, Main Panel DU = %d, Lower DU = %d\n", ctrl->mip.autoBreak, ctrl->mip.efisRange, ctrl->efisMode, ctrl->mip.mainPanelDU, ctrl->mip.lowerDU);
+			printf(">>> Control received, Autobreak = %d, EFIS Range = %d, EFIS Mode = %d, Main Panel DU = %d, Lower DU = %d\n", ctrl->mip.autoBreak, ctrl->mcp.efisRange, ctrl->mcp.efisMode, ctrl->mip.mainPanelDU, ctrl->mip.lowerDU);
 			value+= (char)ctrl->mcp.value;
+		}
+
+		if (radio.read()) {
+			printf(">>> Control received: freq = %d; swap = %d; buttons = %x\n", radio.ctrl.freqSelected, radio.ctrl.freqSwap, radio.ctrl.buttons);
 		}
 
 		time_t seconds = time(NULL);
@@ -282,93 +296,82 @@ void lab() {
 		panel.mcp.altitudeHdg = displayHi(counter1) & displayLo(getGaugeValue(value));
 		panel.mcp.backlight = 0xFF;
 		panel.mip.backlight = 0xFF;
+		panel.mcp.brightness = 10;
 		panel.mip.annunAntiskidInop = 1;
 		panel.mip.annunATRstRed = 1;
 		panel.mip.annunBelowGS = 1;
 		panel.mip.annunFlapsTransit = 1;
 		panel.mip.annunLGearRed = 1;
 		panel.send();
+		radio.data.adf1 = 10000 + counter1;
+		radio.data.brk1 = 0;
+		radio.update();
 		counter1++;
 		if (counter1 == 16) counter1 = 0;
-		Sleep(200);
-	}
-}
-
-void testRadio() {
-	radio.data.com1.active = 11800;
-	radio.data.com1.standby = 13697;
-	radio.data.com2.active = 13697;
-	radio.data.com2.standby = 11800;
-	radio.data.nav1.active = 10800;
-	radio.data.nav1.standby = 11795;
-	radio.data.nav2.active = 11795;
-	radio.data.nav2.standby = 10800;
-	radio.data.adf1 = 2660;
-	radio.data.atc1 = 1200;
-	radio.update();
-
-	while (1) {
-		if (radio.read()) {
-			printf(">>> Control received: freq = %d; swap = %d; buttons = %x\n", radio.ctrl.freqSelected, radio.ctrl.freqSwap, radio.ctrl.buttons);
-		}
-		Sleep(100);
+		Sleep(50);
 	}
 }
 
 int main() {
-	panel.connect(L"COM6", L"COM9", L"COM5");
+	panel.connect(L"\\\\.\\COM16", L"COM9", L"COM5");
 	radio.connect(L"\\\\.\\COM14");
 	//lab();
-	//testRadio();
 	run();
 	panel.disconnect();
 	return 0;
 }
 
-struct mip_data_test {
-	unsigned short flaps;
-	unsigned short reserved;
-	unsigned short value;
-	unsigned char backlight;
+#pragma pack(push, 1)
+struct mcp_data_t2 {
+	uint32_t altitudeHdg;
+	uint32_t vspeedCrsR;
+	uint32_t speedCrsL;
+	uint16_t buttons;
+	uint8_t at_led : 1;
+	uint8_t reserved : 3;
+	uint8_t brightness : 4;
+	uint8_t backlight;
 };
 
-struct mip_ctrl_test {
-	unsigned short value;
-	unsigned short _mipLo;
-	unsigned short _efisHi;
-	unsigned short _efisLo;
-	unsigned short _efisEnc;
-	unsigned char mipEncoders[2];
-	unsigned char mipSpdRefSw;
+struct mcp_ctrl_t2 {
+	uint8_t encoder;
+	uint8_t value;
+	uint16_t buttons;
+	uint8_t buttons2;
+	uint32_t efis;
 };
+#pragma pack(pop)
 
 int main2() {
-	radio_data_t mipData;
-	radio_ctrl_t mipCtrl;
-	SerialPort mipPort;
-	mipPort.connect(L"COM7", 76800);
-	mipData.nav1.active = 11730;
-	mipData.nav1.standby = 11280;
-	mipData.atc1 = 7856;
+	mcp_data_t2 data;
+	mcp_ctrl_t2 ctrl;
+	SerialPort port;
+	port.connect(L"\\\\.\\COM16", CBR_115200);
+	printf("MCP connected\n");
 
 	unsigned char counter1 = 0;
-	unsigned char value = 0;
 
 	while (1) {
 		//auto ch = getchar();
 		//printf(">>> counter1 = %d\n", counter1);
 
-		/*if (mipPort.readData(&mipCtrl)) {
-			printf(">>> Control received %x; encoders = %d, %d; SPD REF = %x\n", mipCtrl.value, mipCtrl.mipEncoders[0], mipCtrl.mipEncoders[1], mipCtrl.mipSpdRefSw);
-			for (int i = 0; i < 16; i++) {
-				if (mipCtrl.value & (1 << i)) {
+		if (port.readDataRaw(&ctrl)) {
+			printf(">>> Control received %x, %x\n", ctrl.buttons, ctrl.efis);
+			for (int i = 0; i < 32; i++) {
+				if (ctrl.efis & (1 << i)) {
 					printf(">>> bit %d\n", i);
 				}
 			}
-		}*/
+		}
 
-		//mipData.value = (1 << counter1);
-		mipPort.sendData(&mipData);
+		data.buttons = (1 << counter1);
+		data.at_led = 1;
+		data.altitudeHdg = displayHi(counter1) & displayLo(0);
+		data.speedCrsL = displayHi(counter1) & displayLo(0);
+		data.vspeedCrsR = displayHi(counter1) & displayLo(0);
+		data.brightness = 10;
+		data.backlight = 50;
+		port.sendDataRaw(&data);
 		counter1++;
 		if (counter1 == 16) counter1 = 0;
 		Sleep(100);
