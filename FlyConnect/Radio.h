@@ -13,6 +13,7 @@ struct FSX_Radio_Data {
 	double COM2_StandBy;
 	double ADF1_Active;
 	double Transponder;
+	double ParkingBrake;
 };
 
 struct RadioInterface {
@@ -45,6 +46,7 @@ struct RadioInterface {
 		SimConnect_AddToDataDefinition(hSimConnect, RADIO_DEF, "COM STANDBY FREQUENCY:2", "Frequency BCD16");
 		SimConnect_AddToDataDefinition(hSimConnect, RADIO_DEF, "ADF ACTIVE FREQUENCY:1", "Frequency ADF BCD32");
 		SimConnect_AddToDataDefinition(hSimConnect, RADIO_DEF, "TRANSPONDER CODE:1", "BCO16");
+		SimConnect_AddToDataDefinition(hSimConnect, RADIO_DEF, "BRAKE PARKING INDICATOR", "Bool");
 
 		SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_NAV1_RADIO_WHOLE_DEC, "NAV1_RADIO_WHOLE_DEC");
 		SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_NAV1_RADIO_WHOLE_INC, "NAV1_RADIO_WHOLE_INC");
@@ -67,8 +69,8 @@ struct RadioInterface {
 		SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_COM2_RADIO_FRACT_INC, "COM2_RADIO_FRACT_INC_CARRY");
 		SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_COM2_RADIO_SWAP, "COM2_RADIO_SWAP");
 
-		SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_ADF1_RADIO_WHOLE_DEC, "ADF_10_DEC");
-		SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_ADF1_RADIO_WHOLE_INC, "ADF_10_INC");
+		SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_ADF1_RADIO_WHOLE_DEC, "ADF1_WHOLE_DEC");
+		SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_ADF1_RADIO_WHOLE_INC, "ADF1_WHOLE_INC");
 		SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_ADF1_RADIO_FRACT_DEC, "ADF_FRACT_DEC_CARRY");
 		SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_ADF1_RADIO_FRACT_INC, "ADF_FRACT_INC_CARRY");
 
@@ -101,5 +103,6 @@ struct RadioInterface {
 		dest->COM2_StandBy = convertBCD16(source->COM2_StandBy);
 		dest->ADF1_Active  = (double)converBCD((unsigned int)source->ADF1_Active) / 10000;
 		dest->Transponder  = converBCD((unsigned short)source->Transponder);
+		dest->ParkingBrake = source->ParkingBrake;
 	}
 };

@@ -111,6 +111,7 @@ void run() {
 		radio.data.nav2.standby = round(ngx->radio.NAV2_StandBy * 100.0);
 		radio.data.adf1 = round(ngx->radio.ADF1_Active * 10.0);
 		radio.data.atc1 = round(ngx->radio.Transponder);
+		radio.data.brk1 = round(ngx->radio.ParkingBrake);
 		radio.update();
 		ngx->requestRadioData();
 
