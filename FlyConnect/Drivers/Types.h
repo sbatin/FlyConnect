@@ -29,6 +29,7 @@
 #define MCP_COURSE_FO  6
 #define MCP_HEADING    7
 
+#pragma pack(push, 1)
 struct mip_data_t {
 	unsigned short flaps;
 	unsigned char annunWarnFltCont     : 1;
@@ -63,7 +64,6 @@ struct mip_data_t {
 	unsigned char backlight;
 };
 
-#pragma pack(push, 1)
 struct mcp_data_t {
 	unsigned long vspeedCrsR;
 	unsigned long altitudeHdg;
@@ -87,11 +87,11 @@ struct mcp_data_t {
 	unsigned char at_arm      : 1;
 	unsigned char reserved    : 3;
 	unsigned char brightness  : 4;
-	unsigned char backlight;
+	mip_data_t mip;
 };
-#pragma pack(pop)
 
 struct mip_ctrl_t {
+	unsigned char mipSpdRefSel;
 	unsigned char ffUsed      : 1;
 	unsigned char ffReset     : 1;
 	unsigned char /* NC */    : 2;
@@ -113,12 +113,8 @@ struct mip_ctrl_t {
 	unsigned char afdsRstFMC  : 1;
 	unsigned char afdsRstAT   : 1;
 	unsigned char afdsRstAP   : 1;
-	unsigned char mipN1Set;
-	unsigned char mipSpdRef;
-	unsigned char mipSpdRefSel;
 };
 
-#pragma pack(push, 1)
 struct mcp_ctrl_t {
 	unsigned char encoder;
 	unsigned char value;
@@ -166,6 +162,8 @@ struct mcp_ctrl_t {
 	unsigned char efisWPT  : 1;
 	unsigned char efisSTA  : 1;
 	unsigned char efisWXR  : 1;
+	// MIP buttons mapping
+	mip_ctrl_t mip;
 };
 #pragma pack(pop)
 

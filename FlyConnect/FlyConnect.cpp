@@ -49,7 +49,6 @@ void sendNGX_PanelState(PMDG_NGX_Data* state) {
 	panel.mcp.vor_loc = state->MCP_annunVOR_LOC;
 	panel.mcp.vs = state->MCP_annunVS;
 
-	panel.mcp.backlight = state->LTS_MainPanelKnob[0];
 	panel.mip.backlight = state->LTS_MainPanelKnob[0];
 	panel.mip.flaps = getGaugeValue(state->MAIN_TEFlapsNeedle[0]);
 	panel.mip.annunNGearGrn = state->MAIN_annunGEAR_locked[1];
@@ -295,7 +294,6 @@ void lab() {
 		panel.mcp.speedCrsL = displayHi(value) & mask & displayLo((float)0.78);
 		panel.mcp.vspeedCrsR = 0xDEFFFFFF & displayLo(-1000);
 		panel.mcp.altitudeHdg = displayHi(counter1) & displayLo(getGaugeValue(value));
-		panel.mcp.backlight = 0xFF;
 		panel.mip.backlight = 0xFF;
 		panel.mcp.brightness = 10;
 		panel.mip.annunAntiskidInop = 1;
@@ -314,9 +312,9 @@ void lab() {
 }
 
 int main() {
-	panel.connect(L"\\\\.\\COM16", L"COM9", L"COM5");
+	panel.connect(L"\\\\.\\COM16", L"COM5");
 	radio.connect(L"\\\\.\\COM14");
-	//lab();
+	lab();
 	run();
 	panel.disconnect();
 	return 0;

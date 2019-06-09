@@ -79,7 +79,6 @@ struct PanelInput {
 
 class Panel {
 private:
-	SerialPort mipPort;
 	SerialPort mcpPort;
 	SerialPort ovhPort;
 public:
@@ -90,16 +89,14 @@ public:
 	Panel(void) {};
 	~Panel(void) {};
 
-	void connect(const wchar_t* mcpPortPath, const wchar_t* mipPortPath, const wchar_t* ovhPortPath) {
+	void connect(const wchar_t* mcpPortPath, const wchar_t* ovhPortPath) {
 		if (mcpPort.connect(mcpPortPath, CBR_115200)) {
 			printf("MCP connected:\n");
 		}
-		connectPort(&mipPort, mipPortPath, "MIP", CBR_19200);
 		connectPort(&ovhPort, ovhPortPath, "OVH", CBR_4800);
 	}
 
 	void disconnect() {
-		mipPort.close();
 		mcpPort.close();
 		ovhPort.close();
 	}
@@ -170,8 +167,8 @@ public:
 	}
 
 	void send() {
+		mcp.mip = mip;
 		mcpPort.sendDataRaw(&mcp);
-		mipPort.sendData(&mip);
 	}
 
 	bool read() {
@@ -183,14 +180,12 @@ public:
 		unsigned char prevRange = input.mcp.efisRange;
 
 		if (mcpPort.readDataRaw(&input.mcp)) {
+			input.mip = input.mcp.mip;
+
 			input.mcp.efisMode = input.mcp.efisMode ? decodeRotaryState(input.mcp.efisMode) - 1 : prevMode;
 			input.mcp.efisRange = input.mcp.efisRange ? decodeRotaryState(input.mcp.efisRange) - 1 : prevRange;
 			input.vorAdfSel1 = toSwitchState(input.mcp.efisVOR1, input.mcp.efisADF1);
 			input.vorAdfSel2 = toSwitchState(input.mcp.efisVOR2, input.mcp.efisADF2);
-			result = true;
-		}
-
-		if (mipPort.readData(&input.mip)) {
 			input.mip.autoBreak = decodeRotaryState(input.mip.autoBreak);
 			input.mip.mainPanelDU = decodeRotaryState(input.mip.mainPanelDU);
 			input.mip.lowerDU = decodeRotaryState(input.mip.lowerDU);
