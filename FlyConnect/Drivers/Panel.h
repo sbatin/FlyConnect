@@ -23,6 +23,7 @@
 #include "Types.h"
 #include "Display.h"
 #include "SerialPort.h"
+#include "hidapi.h"
 
 // FLAPS40 = 810 (4/3 circle)
 float flapsValues[] = { 0, 1, 2, 5, 10, 15, 25, 30, 40 };
@@ -56,19 +57,9 @@ static unsigned char decodeRotaryState(unsigned char value) {
 	return 0;
 }
 
-static void connectPort(SerialPort* port, const wchar_t* path, const char* name, DWORD baudRate) {
-	printf("%s connecting...\n", name);
-	if (port->connect(path, baudRate)) {
-		char *message = port->readMessage();
-		printf("%s connected: %s\n", name, message);
-	}
-}
-
 enum DisplayState { Blank = 0, Enabled = 1, Overspeed = 2, Underspeed = 3 };
 
 struct PanelInput {
-	struct mcp_ctrl_t mcp;
-	struct mip_ctrl_t mip;
 	struct overhead_ctrl_t overhead;
 	unsigned char vorAdfSel1;
 	unsigned char vorAdfSel2;
@@ -77,121 +68,161 @@ struct PanelInput {
 	unsigned char fuelFlowSw;
 };
 
+#pragma pack(push, 1)
+struct usb_data_t {
+	unsigned char report_id;
+	mcp_data_t mcp;
+	mip_data_t mip;
+};
+
+struct usb_ctrl_t {
+	unsigned char report_id;
+	mcp_ctrl_t mcp;
+	mip_ctrl_t mip;
+};
+#pragma pack(pop)
+
+#define MAX_STR 255
+
 class Panel {
 private:
-	SerialPort mcpPort;
+	//SerialPort mcpPort;
 	SerialPort ovhPort;
+	hid_device *hidPanel;
+	struct usb_data_t usbDataOut;
+	struct usb_ctrl_t usbDataIn;
 public:
-	struct mcp_data_t mcp;
-	struct mip_data_t mip;
+	struct mcp_data_t *mcpData;
+	struct mip_data_t *mipData;
+	struct mcp_ctrl_t *mcpCtrl;
+	struct mip_ctrl_t *mipCtrl;
 	struct PanelInput input;
 
 	Panel(void) {};
 	~Panel(void) {};
 
 	void connect(const wchar_t* mcpPortPath, const wchar_t* ovhPortPath) {
-		if (mcpPort.connect(mcpPortPath, CBR_115200)) {
-			printf("MCP connected:\n");
+		wchar_t wstr[MAX_STR];
+		hid_init();
+		hidPanel = hid_open(0x483, 0x5750, NULL);
+		if (hidPanel != NULL) {
+			hid_get_manufacturer_string(hidPanel, wstr, MAX_STR);
+			wprintf(L"Manufacturer String: %s\n", wstr);
+			hid_get_product_string(hidPanel, wstr, MAX_STR);
+			wprintf(L"Product String: %s\n", wstr);
+			hid_get_serial_number_string(hidPanel, wstr, MAX_STR);
+			wprintf(L"Serial Number String: %s\n", wstr);
+			mcpData = &usbDataOut.mcp;
+			mipData = &usbDataOut.mip;
+			mcpCtrl = &usbDataIn.mcp;
+			mipCtrl = &usbDataIn.mip;
 		}
-		connectPort(&ovhPort, ovhPortPath, "OVH", CBR_4800);
+		/*if (mcpPort.connect(mcpPortPath, CBR_115200)) {
+			printf("MCP connected:\n");
+		}*/
+		printf("Overhead connecting...\n");
+		if (ovhPort.connect(ovhPortPath, CBR_4800)) {
+			char *message = ovhPort.readMessage();
+			printf("Overhead connected: %s\n", message);
+		}
 	}
 
 	void disconnect() {
-		mcpPort.close();
+		hid_close(hidPanel);
+		//mcpPort.close();
 		ovhPort.close();
 	}
 
 	void lightsTest() {
 		auto seconds = time(NULL);
 
-		mcp.speedCrsL = seconds % 3 == 0 ? 0x888F8888 : DISP_OFF_MASK;
-		mcp.vspeedCrsR = seconds % 3 == 0 ? 0x888C8880 : DISP_OFF_MASK;
-		mcp.altitudeHdg = seconds % 3 == 0 ? 0x88888880 : DISP_OFF_MASK;
-		mcp.alt_hld = 1;
-		mcp.app = 1;
-		mcp.at_arm = 1;
-		mcp.cmd_a = 1;
-		mcp.cmd_b = 1;
-		mcp.cws_a = 1;
-		mcp.cws_b = 1;
-		mcp.fd_ca = 1;
-		mcp.fd_fo = 1;
-		mcp.hdg_sel = 1;
-		mcp.lnav = 1;
-		mcp.lvl_chg = 1;
-		mcp.n1 = 1;
-		mcp.speed = 1;
-		mcp.vnav = 1;
-		mcp.vor_loc = 1;
-		mcp.vs = 1;
-		mip.annunNGearGrn = 1;
-		mip.annunNGearRed = 1;
-		mip.annunRGearGrn = 1;
-		mip.annunRGearRed = 1;
-		mip.annunLGearGrn = 1;
-		mip.annunLGearRed = 1;
-		mip.annunAntiskidInop = 1;
-		mip.annunAutobreakDisarm = 1;
-		mip.annunFlapsExt = 1;
-		mip.annunFlapsTransit = 1;
-		mip.annunStabOutOfTrim = 1;
-		mip.annunBelowGS = 1;
-		mip.annunSpeedbrakeArmed = 1;
-		mip.annunSpeedbrakNotArm = 1;
+		mcpData->speedCrsL = seconds % 3 == 0 ? 0x888F8888 : DISP_OFF_MASK;
+		mcpData->vspeedCrsR = seconds % 3 == 0 ? 0x888C8880 : DISP_OFF_MASK;
+		mcpData->altitudeHdg = seconds % 3 == 0 ? 0x88888880 : DISP_OFF_MASK;
+		mcpData->alt_hld = 1;
+		mcpData->app = 1;
+		mcpData->at_arm = 1;
+		mcpData->cmd_a = 1;
+		mcpData->cmd_b = 1;
+		mcpData->cws_a = 1;
+		mcpData->cws_b = 1;
+		mcpData->fd_ca = 1;
+		mcpData->fd_fo = 1;
+		mcpData->hdg_sel = 1;
+		mcpData->lnav = 1;
+		mcpData->lvl_chg = 1;
+		mcpData->n1 = 1;
+		mcpData->speed = 1;
+		mcpData->vnav = 1;
+		mcpData->vor_loc = 1;
+		mcpData->vs = 1;
+		mipData->annunNGearGrn = 1;
+		mipData->annunNGearRed = 1;
+		mipData->annunRGearGrn = 1;
+		mipData->annunRGearRed = 1;
+		mipData->annunLGearGrn = 1;
+		mipData->annunLGearRed = 1;
+		mipData->annunAntiskidInop = 1;
+		mipData->annunAutobreakDisarm = 1;
+		mipData->annunFlapsExt = 1;
+		mipData->annunFlapsTransit = 1;
+		mipData->annunStabOutOfTrim = 1;
+		mipData->annunBelowGS = 1;
+		mipData->annunSpeedbrakeArmed = 1;
+		mipData->annunSpeedbrakNotArm = 1;
 	}
 
 	void setMCPDisplays(unsigned short courseL, float IASKtsMach, DisplayState IASState, unsigned short heading, unsigned short altitude, short vertSpeed, bool vsEnabled, unsigned short courseR) {
-		mcp.speedCrsL = displayHi(courseL);
-		mcp.vspeedCrsR = displayHi(courseR);
-		mcp.altitudeHdg = displayHi(heading) & displayLo(altitude);
+		mcpData->speedCrsL = displayHi(courseL);
+		mcpData->vspeedCrsR = displayHi(courseR);
+		mcpData->altitudeHdg = displayHi(heading) & displayLo(altitude);
 
 		if (IASState != Blank) {
 			if (IASState == Overspeed) {
-				mcp.speedCrsL &= 0xFFFFBFFF;
+				mcpData->speedCrsL &= 0xFFFFBFFF;
 			}
 
 			if (IASState == Underspeed) {
-				mcp.speedCrsL &= 0xFFFFAFFF;
+				mcpData->speedCrsL &= 0xFFFFAFFF;
 			}
 
 			if (IASKtsMach < 10) {
-				mcp.speedCrsL &= displayLo(IASKtsMach);
+				mcpData->speedCrsL &= displayLo(IASKtsMach);
 			} else {
-				mcp.speedCrsL &= displayLo((int)IASKtsMach);
+				mcpData->speedCrsL &= displayLo((int)IASKtsMach);
 			}
 		}
 
 		if (vsEnabled) {
-			mcp.vspeedCrsR &= displayLo(vertSpeed, 0xFFFF0000);
+			mcpData->vspeedCrsR &= displayLo(vertSpeed, 0xFFFF0000);
 		}
 	}
 
 	void send() {
-		mcp.mip = mip;
-		mcpPort.sendDataRaw(&mcp);
+		usbDataOut.report_id = 2;
+		hid_write(hidPanel, (unsigned char*)&usbDataOut, sizeof(usb_data_t));
+		//mcpPort.sendDataRaw(&mcp);
 	}
 
 	bool read() {
 		bool result = false;
 
-		input.mcp.value = 0;
+		mcpCtrl->value = 0;
+		unsigned char prevMode = mcpCtrl->efisMode;
+		unsigned char prevRange = mcpCtrl->efisRange;
 
-		unsigned char prevMode = input.mcp.efisMode;
-		unsigned char prevRange = input.mcp.efisRange;
-
-		if (mcpPort.readDataRaw(&input.mcp)) {
-			input.mip = input.mcp.mip;
-
-			input.mcp.efisMode = input.mcp.efisMode ? decodeRotaryState(input.mcp.efisMode) - 1 : prevMode;
-			input.mcp.efisRange = input.mcp.efisRange ? decodeRotaryState(input.mcp.efisRange) - 1 : prevRange;
-			input.vorAdfSel1 = toSwitchState(input.mcp.efisVOR1, input.mcp.efisADF1);
-			input.vorAdfSel2 = toSwitchState(input.mcp.efisVOR2, input.mcp.efisADF2);
-			input.mip.autoBreak = decodeRotaryState(input.mip.autoBreak);
-			input.mip.mainPanelDU = decodeRotaryState(input.mip.mainPanelDU);
-			input.mip.lowerDU = decodeRotaryState(input.mip.lowerDU);
-			input.fuelFlowSw = toSwitchState(input.mip.ffReset, input.mip.ffUsed);
-			input.mainLights = toSwitchState(input.mip.lightsTest, input.mip.lightsDim);
-			input.disengageLights = toSwitchState(input.mip.afdsTest1, input.mip.afdsTest2);
+		//if (mcpPort.readDataRaw(&input.mcp)) {
+		if (hid_read_timeout(hidPanel, (unsigned char*)&usbDataIn, sizeof(usb_ctrl_t), 1)) {
+			mcpCtrl->efisMode = mcpCtrl->efisMode ? decodeRotaryState(mcpCtrl->efisMode) - 1 : prevMode;
+			mcpCtrl->efisRange = mcpCtrl->efisRange ? decodeRotaryState(mcpCtrl->efisRange) - 1 : prevRange;
+			input.vorAdfSel1 = toSwitchState(mcpCtrl->efisVOR1, mcpCtrl->efisADF1);
+			input.vorAdfSel2 = toSwitchState(mcpCtrl->efisVOR2, mcpCtrl->efisADF2);
+			mipCtrl->autoBreak = decodeRotaryState(mipCtrl->autoBreak);
+			mipCtrl->mainPanelDU = decodeRotaryState(mipCtrl->mainPanelDU);
+			mipCtrl->lowerDU = decodeRotaryState(mipCtrl->lowerDU);
+			input.fuelFlowSw = toSwitchState(mipCtrl->ffReset, mipCtrl->ffUsed);
+			input.mainLights = toSwitchState(mipCtrl->lightsTest, mipCtrl->lightsDim);
+			input.disengageLights = toSwitchState(mipCtrl->afdsTest1, mipCtrl->afdsTest2);
 
 			result = true;
 		}
@@ -240,10 +271,6 @@ public:
 
 	void update() {
 		port.sendData(&data);
-		/*if (memcmp(&data, &prevData, sizeof(radio_data_t))) {
-			port.sendData(&data);
-			memcpy(&prevData, &data, sizeof(radio_data_t));
-		}*/
 	}
 
 	bool read() {

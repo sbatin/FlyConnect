@@ -87,7 +87,6 @@ struct mcp_data_t {
 	unsigned char at_arm      : 1;
 	unsigned char reserved    : 3;
 	unsigned char brightness  : 4;
-	mip_data_t mip;
 };
 
 struct mip_ctrl_t {
@@ -162,8 +161,6 @@ struct mcp_ctrl_t {
 	unsigned char efisWPT  : 1;
 	unsigned char efisSTA  : 1;
 	unsigned char efisWXR  : 1;
-	// MIP buttons mapping
-	mip_ctrl_t mip;
 };
 #pragma pack(pop)
 
