@@ -267,7 +267,7 @@ void run() {
 			ngx->send(EVT_OH_LIGHTS_R_ENGINE_START, overhead->eng_start_r, ngx->data.ENG_StartSelector[1]);
 		}
 
-		Sleep(50);
+		Sleep(20);
 	}
 }
 
@@ -311,69 +311,10 @@ void lab() {
 }
 
 int main() {
-	panel.connect(L"\\\\.\\COM16", L"COM6");
+	panel.connect(L"COM6");
 	radio.connect(L"\\\\.\\COM20");
-	lab();
+	//lab();
 	run();
 	panel.disconnect();
-	return 0;
-}
-
-#pragma pack(push, 1)
-struct mcp_data_t2 {
-	uint32_t altitudeHdg;
-	uint32_t vspeedCrsR;
-	uint32_t speedCrsL;
-	uint16_t buttons;
-	uint8_t at_led : 1;
-	uint8_t reserved : 3;
-	uint8_t brightness : 4;
-	uint8_t backlight;
-};
-
-struct mcp_ctrl_t2 {
-	uint8_t encoder;
-	uint8_t value;
-	uint16_t buttons;
-	uint8_t buttons2;
-	uint32_t efis;
-};
-#pragma pack(pop)
-
-int main2() {
-	mcp_data_t2 data;
-	mcp_ctrl_t2 ctrl;
-	SerialPort port;
-	port.connect(L"\\\\.\\COM16", CBR_115200);
-	printf("MCP connected\n");
-
-	unsigned char counter1 = 0;
-
-	while (1) {
-		//auto ch = getchar();
-		//printf(">>> counter1 = %d\n", counter1);
-
-		if (port.readDataRaw(&ctrl)) {
-			printf(">>> Control received %x, %x\n", ctrl.buttons, ctrl.efis);
-			for (int i = 0; i < 32; i++) {
-				if (ctrl.efis & (1 << i)) {
-					printf(">>> bit %d\n", i);
-				}
-			}
-		}
-
-		data.buttons = (1 << counter1);
-		data.at_led = 1;
-		data.altitudeHdg = displayHi(counter1) & displayLo(0);
-		data.speedCrsL = displayHi(counter1) & displayLo(0);
-		data.vspeedCrsR = displayHi(counter1) & displayLo(0);
-		data.brightness = 10;
-		data.backlight = 50;
-		port.sendDataRaw(&data);
-		counter1++;
-		if (counter1 == 16) counter1 = 0;
-		Sleep(100);
-	}
-
 	return 0;
 }

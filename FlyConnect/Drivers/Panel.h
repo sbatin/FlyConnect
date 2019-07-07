@@ -86,7 +86,6 @@ struct usb_ctrl_t {
 
 class Panel {
 private:
-	//SerialPort mcpPort;
 	SerialPort ovhPort;
 	hid_device *hidPanel;
 	struct usb_data_t usbDataOut;
@@ -101,7 +100,8 @@ public:
 	Panel(void) {};
 	~Panel(void) {};
 
-	void connect(const wchar_t* mcpPortPath, const wchar_t* ovhPortPath) {
+	void connect(const wchar_t* ovhPortPath) {
+		printf("MCP connecting...\n");
 		wchar_t wstr[MAX_STR];
 		hid_init();
 		hidPanel = hid_open(0x483, 0x5750, NULL);
@@ -117,9 +117,6 @@ public:
 			mcpCtrl = &usbDataIn.mcp;
 			mipCtrl = &usbDataIn.mip;
 		}
-		/*if (mcpPort.connect(mcpPortPath, CBR_115200)) {
-			printf("MCP connected:\n");
-		}*/
 		printf("Overhead connecting...\n");
 		if (ovhPort.connect(ovhPortPath, CBR_4800)) {
 			char *message = ovhPort.readMessage();
@@ -129,7 +126,6 @@ public:
 
 	void disconnect() {
 		hid_close(hidPanel);
-		//mcpPort.close();
 		ovhPort.close();
 	}
 
@@ -201,7 +197,6 @@ public:
 	void send() {
 		usbDataOut.report_id = 2;
 		hid_write(hidPanel, (unsigned char*)&usbDataOut, sizeof(usb_data_t));
-		//mcpPort.sendDataRaw(&mcp);
 	}
 
 	bool read() {
@@ -211,7 +206,6 @@ public:
 		unsigned char prevMode = mcpCtrl->efisMode;
 		unsigned char prevRange = mcpCtrl->efisRange;
 
-		//if (mcpPort.readDataRaw(&input.mcp)) {
 		if (hid_read_timeout(hidPanel, (unsigned char*)&usbDataIn, sizeof(usb_ctrl_t), 1)) {
 			mcpCtrl->efisMode = mcpCtrl->efisMode ? decodeRotaryState(mcpCtrl->efisMode) - 1 : prevMode;
 			mcpCtrl->efisRange = mcpCtrl->efisRange ? decodeRotaryState(mcpCtrl->efisRange) - 1 : prevRange;
@@ -223,7 +217,6 @@ public:
 			input.fuelFlowSw = toSwitchState(mipCtrl->ffReset, mipCtrl->ffUsed);
 			input.mainLights = toSwitchState(mipCtrl->lightsTest, mipCtrl->lightsDim);
 			input.disengageLights = toSwitchState(mipCtrl->afdsTest1, mipCtrl->afdsTest2);
-
 			result = true;
 		}
 

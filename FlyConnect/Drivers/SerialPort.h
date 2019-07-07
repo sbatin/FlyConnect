@@ -56,8 +56,6 @@ public:
 	int close();
 	template<typename T> void sendData(T* data);
 	template<typename T> int readData(T* dest);
-	template<typename T> void sendDataRaw(T* data);
-	template<typename T> int readDataRaw(T* dest);
 
 	char* readMessage() {
 		if (!connected) return NULL;
@@ -218,42 +216,5 @@ int SerialPort::readData(T* dest) {
 		}
 	}
 	
-	return 0;
-}
-
-template<typename T>
-void SerialPort::sendDataRaw(T* data) {
-	send((char*)data, sizeof(T));
-}
-
-template<typename T>
-int SerialPort::readDataRaw(T* dest) {
-	if (!connected) return 0;
-
-	DWORD iSize;
-	unsigned char sBuff[SERAIL_RX_BUFFER_LENGTH];
-
-	ReadFile(handle, sBuff, SERAIL_RX_BUFFER_LENGTH, &iSize, 0);
-
-	if (iSize > 0) {
-		printf("Size = %d, received = ", iSize);
-		for (DWORD i = 0; i < iSize; i++) {
-			printf("%02X ", sBuff[i]);
-		}
-
-		printf("\n");
-
-		for (DWORD i = 0; i < iSize; i++) {
-			uart_rx_buffer[uart_counter++] = sBuff[i];
-
-			if (uart_counter == sizeof(T)) {
-				uart_counter = 0;
-				memcpy(dest, (const void*)uart_rx_buffer, sizeof(T));
-			}
-		}
-
-		return 1;
-	}
-
 	return 0;
 }

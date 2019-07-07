@@ -6,7 +6,7 @@ enum GROUP_ID {
 
 void Joystick_MapButton(HANDLE hSimConnect, char button, SIMCONNECT_CLIENT_EVENT_ID eventId) {
 	using namespace std;
-	auto name = "joystick:2:button:" + to_string(static_cast<long long>(button));
+	auto name = "joystick:3:button:" + to_string(static_cast<long long>(button));
 
 	// Set up a private event and add it to the group
 	SimConnect_MapClientEventToSimEvent(hSimConnect, eventId);
