@@ -8,6 +8,7 @@
 
 Panel panel = Panel();
 RadioPanel radio = RadioPanel();
+Overhead overhead = Overhead();
 
 void sendNGX_PanelState(PMDG_NGX_Data* state) {
 	auto seconds = time(NULL);
@@ -143,10 +144,44 @@ void run() {
 			ngx->send(EVT_TCAS_MODE, radio.XPDR_ModeSel, ngx->data.XPDR_ModeSel);
 		}
 
+		if (overhead.read()) {
+			auto input = &overhead.ctrl;
+
+			if (input->ldg_retract_l != ngx->data.LTS_LandingLtRetractableSw[0]) {
+				ngx->send(EVT_OH_LIGHTS_L_RETRACT, input->ldg_retract_l ? 2 : 0);
+			}
+
+			if (input->ldg_retract_r != ngx->data.LTS_LandingLtRetractableSw[1]) {
+				ngx->send(EVT_OH_LIGHTS_R_RETRACT, input->ldg_retract_r ? 2 : 0);
+			}
+
+			ngx->send(EVT_OH_LIGHTS_L_FIXED, input->ldg_fixed_l, ngx->data.LTS_LandingLtFixedSw[0]);
+			ngx->send(EVT_OH_LIGHTS_R_FIXED, input->ldg_fixed_r, ngx->data.LTS_LandingLtFixedSw[1]);
+			ngx->send(EVT_OH_LIGHTS_L_TURNOFF, input->rw_turnoff_l, ngx->data.LTS_RunwayTurnoffSw[0]);
+			ngx->send(EVT_OH_LIGHTS_R_TURNOFF, input->rw_turnoff_r, ngx->data.LTS_RunwayTurnoffSw[1]);
+			ngx->send(EVT_OH_LIGHTS_TAXI, input->taxi_light, ngx->data.LTS_TaxiSw);
+			ngx->send(EVT_OH_LIGHTS_LOGO, input->logo_light, ngx->data.LTS_LogoSw);
+			ngx->send(EVT_OH_LIGHTS_ANT_COL, input->anti_collisn, ngx->data.LTS_AntiCollisionSw);
+			ngx->send(EVT_OH_LIGHTS_WING, input->wing_light, ngx->data.LTS_WingSw);
+
+			auto ovhApuSw = toSwitchState(input->apu_off, input->apu_start);
+			if (ovhApuSw != ngx->data.APU_Selector) {
+				ngx->send(EVT_OH_LIGHTS_APU_START, ovhApuSw);
+			}
+
+			auto ovhPosSw = toSwitchState(input->strobe_light, input->steady_light);
+			if (ovhPosSw != ngx->data.LTS_PositionSw) {
+				ngx->send(EVT_OH_LIGHTS_POS_STROBE, ovhPosSw);
+			}
+
+			ngx->send(EVT_OH_LIGHTS_L_ENGINE_START, input->eng_start_l, ngx->data.ENG_StartSelector[0]);
+			ngx->send(EVT_OH_LIGHTS_R_ENGINE_START, input->eng_start_r, ngx->data.ENG_StartSelector[1]);
+		}
+
 		if (panel.read()) {
 			auto mcpInput = panel.mcpCtrl;
 			auto mipInput = panel.mipCtrl;
-			auto overhead = &panel.input.overhead;
+			
 			printf(">>> Control received, MCP_Enc_Val = %d, MCP_Enc_Num = %d\n", mcpInput->value, mcpInput->encoder);
 
 			switch (mcpInput->encoder) {
@@ -176,9 +211,11 @@ void run() {
 					break;
 			}
 
-			if (mipInput->gearUP && ngx->data.MAIN_GearLever != 0) ngx->send(EVT_GEAR_LEVER, MOUSE_FLAG_RIGHTSINGLE);
-			if (mipInput->gearDN && ngx->data.MAIN_GearLever != 2) ngx->send(EVT_GEAR_LEVER, MOUSE_FLAG_LEFTSINGLE);
-			if (!mipInput->gearUP && !mipInput->gearDN && ngx->data.MAIN_GearLever != 1) ngx->send(EVT_GEAR_LEVER_OFF, MOUSE_FLAG_LEFTSINGLE);
+			if (panel.input.gearLever != ngx->data.MAIN_GearLever) {
+				if (panel.input.gearLever == 0) ngx->send(EVT_GEAR_LEVER, MOUSE_FLAG_RIGHTSINGLE);
+				if (panel.input.gearLever == 1) ngx->send(EVT_GEAR_LEVER_OFF, MOUSE_FLAG_LEFTSINGLE);
+				if (panel.input.gearLever == 2) ngx->send(EVT_GEAR_LEVER, MOUSE_FLAG_LEFTSINGLE);
+			}
 
 			// MCP
 			if (mcpInput->fd_ca != ngx->data.MCP_FDSw[0]) ngx->send(EVT_MCP_FD_SWITCH_L, mcpInput->fd_ca ? 0 : 1);
@@ -234,37 +271,6 @@ void run() {
 			ngx->pressButton(EVT_EFIS_CPT_MTRS, mcpInput->efisMTRS);
 			ngx->pressButton(EVT_EFIS_CPT_BARO_STD, mcpInput->efisSTD);
 			ngx->pressButton(EVT_EFIS_CPT_MINIMUMS_RST, mcpInput->efisRST);
-
-			// Overhead
-			if (overhead->ldg_retract_l != ngx->data.LTS_LandingLtRetractableSw[0]) {
-				ngx->send(EVT_OH_LIGHTS_L_RETRACT, overhead->ldg_retract_l ? 2 : 0);
-			}
-
-			if (overhead->ldg_retract_r != ngx->data.LTS_LandingLtRetractableSw[1]) {
-				ngx->send(EVT_OH_LIGHTS_R_RETRACT, overhead->ldg_retract_r ? 2 : 0);
-			}
-
-			ngx->send(EVT_OH_LIGHTS_L_FIXED, overhead->ldg_fixed_l, ngx->data.LTS_LandingLtFixedSw[0]);
-			ngx->send(EVT_OH_LIGHTS_R_FIXED, overhead->ldg_fixed_r, ngx->data.LTS_LandingLtFixedSw[1]);
-			ngx->send(EVT_OH_LIGHTS_L_TURNOFF, overhead->rw_turnoff_l, ngx->data.LTS_RunwayTurnoffSw[0]);
-			ngx->send(EVT_OH_LIGHTS_R_TURNOFF, overhead->rw_turnoff_r, ngx->data.LTS_RunwayTurnoffSw[1]);
-			ngx->send(EVT_OH_LIGHTS_TAXI, overhead->taxi_light, ngx->data.LTS_TaxiSw);
-			ngx->send(EVT_OH_LIGHTS_LOGO, overhead->logo_light, ngx->data.LTS_LogoSw);
-			ngx->send(EVT_OH_LIGHTS_ANT_COL, overhead->anti_collisn, ngx->data.LTS_AntiCollisionSw);
-			ngx->send(EVT_OH_LIGHTS_WING, overhead->wing_light, ngx->data.LTS_WingSw);
-
-			auto ovhApuSw = toSwitchState(overhead->apu_off, overhead->apu_start);
-			if (ovhApuSw != ngx->data.APU_Selector) {
-				ngx->send(EVT_OH_LIGHTS_APU_START, ovhApuSw);
-			}
-
-			auto ovhPosSw = toSwitchState(overhead->strobe_light, overhead->steady_light);
-			if (ovhPosSw != ngx->data.LTS_PositionSw) {
-				ngx->send(EVT_OH_LIGHTS_POS_STROBE, ovhPosSw);
-			}
-
-			ngx->send(EVT_OH_LIGHTS_L_ENGINE_START, overhead->eng_start_l, ngx->data.ENG_StartSelector[0]);
-			ngx->send(EVT_OH_LIGHTS_R_ENGINE_START, overhead->eng_start_r, ngx->data.ENG_StartSelector[1]);
 		}
 
 		Sleep(20);
@@ -311,10 +317,12 @@ void lab() {
 }
 
 int main() {
-	panel.connect(L"COM6");
+	panel.connect();
+	overhead.connect(L"COM6");
 	radio.connect(L"\\\\.\\COM20");
 	//lab();
 	run();
 	panel.disconnect();
+	overhead.disconnect();
 	return 0;
 }

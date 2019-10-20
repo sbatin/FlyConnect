@@ -60,12 +60,12 @@ static unsigned char decodeRotaryState(unsigned char value) {
 enum DisplayState { Blank = 0, Enabled = 1, Overspeed = 2, Underspeed = 3 };
 
 struct PanelInput {
-	struct overhead_ctrl_t overhead;
 	unsigned char vorAdfSel1;
 	unsigned char vorAdfSel2;
 	unsigned char mainLights;
 	unsigned char disengageLights;
 	unsigned char fuelFlowSw;
+	unsigned char gearLever;
 };
 
 #pragma pack(push, 1)
@@ -86,7 +86,6 @@ struct usb_ctrl_t {
 
 class Panel {
 private:
-	SerialPort ovhPort;
 	hid_device *hidPanel;
 	struct usb_data_t usbDataOut;
 	struct usb_ctrl_t usbDataIn;
@@ -100,7 +99,7 @@ public:
 	Panel(void) {};
 	~Panel(void) {};
 
-	void connect(const wchar_t* ovhPortPath) {
+	void connect() {
 		printf("MCP connecting...\n");
 		wchar_t wstr[MAX_STR];
 		hid_init();
@@ -117,16 +116,10 @@ public:
 			mcpCtrl = &usbDataIn.mcp;
 			mipCtrl = &usbDataIn.mip;
 		}
-		printf("Overhead connecting...\n");
-		if (ovhPort.connect(ovhPortPath, CBR_4800)) {
-			char *message = ovhPort.readMessage();
-			printf("Overhead connected: %s\n", message);
-		}
 	}
 
 	void disconnect() {
 		hid_close(hidPanel);
-		ovhPort.close();
 	}
 
 	void lightsTest() {
@@ -217,16 +210,43 @@ public:
 			input.fuelFlowSw = toSwitchState(mipCtrl->ffReset, mipCtrl->ffUsed);
 			input.mainLights = toSwitchState(mipCtrl->lightsTest, mipCtrl->lightsDim);
 			input.disengageLights = toSwitchState(mipCtrl->afdsTest1, mipCtrl->afdsTest2);
-			result = true;
-		}
-
-		if (ovhPort.readData(&input.overhead)) {
-			input.overhead.eng_start_l = decodeRotaryState(input.overhead.eng_start_l);
-			input.overhead.eng_start_r = decodeRotaryState(input.overhead.eng_start_r);
+			input.gearLever = toSwitchState(mipCtrl->gearUP, mipCtrl->gearDN);
 			result = true;
 		}
 
 		return result;
+	}
+};
+
+class Overhead {
+private:
+	SerialPort port;
+public:
+	struct overhead_ctrl_t ctrl;
+
+	Overhead(void) {};
+	~Overhead(void) {};
+
+	void connect(const wchar_t* path) {
+		printf("Overhead connecting...\n");
+		if (port.connect(path, CBR_4800)) {
+			char *message = port.readMessage();
+			printf("Overhead connected: %s\n", message);
+		}
+	}
+
+	void disconnect() {
+		port.close();
+	}
+
+	bool read() {
+		if (port.readData(&ctrl)) {
+			ctrl.eng_start_l = decodeRotaryState(ctrl.eng_start_l);
+			ctrl.eng_start_r = decodeRotaryState(ctrl.eng_start_r);
+			return true;
+		}
+
+		return false;
 	}
 };
 
