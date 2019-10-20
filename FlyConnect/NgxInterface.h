@@ -60,7 +60,7 @@ public:
 
 	void adjust(EVENT_ID eventId, char value) {
 		int flag = value > 0 ? MOUSE_FLAG_WHEEL_UP : MOUSE_FLAG_WHEEL_DOWN;
-		for (unsigned char i = 0; i < min(10, abs(value*value)); i++)
+		for (unsigned char i = 0; i < abs(value); i++)
 			SimConnect_TransmitClientEvent(hSimConnect, 0, eventId, flag, SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
 	}
 
