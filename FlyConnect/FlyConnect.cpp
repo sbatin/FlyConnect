@@ -94,6 +94,10 @@ void sendNGX_PanelState(PMDG_NGX_Data* state) {
 	panel.send();
 }
 
+unsigned short round_s(double f) {
+	return (unsigned short)round(f);
+}
+
 void run() {
 	auto ngx = new NgxInterface();
 	ngx->connect();
@@ -101,17 +105,17 @@ void run() {
 	while (ngx->connected) {
 		sendNGX_PanelState(&ngx->data);
 
-		radio.data.com1.active = round(ngx->radio.COM1_Active * 100.0);
-		radio.data.com1.standby = round(ngx->radio.COM1_StandBy * 100.0);
-		radio.data.com2.active = round(ngx->radio.COM2_Active * 100.0);
-		radio.data.com2.standby = round(ngx->radio.COM2_StandBy * 100.0);
-		radio.data.nav1.active = round(ngx->radio.NAV1_Active * 100.0);
-		radio.data.nav1.standby = round(ngx->radio.NAV1_StandBy * 100.0);
-		radio.data.nav2.active = round(ngx->radio.NAV2_Active * 100.0);
-		radio.data.nav2.standby = round(ngx->radio.NAV2_StandBy * 100.0);
-		radio.data.adf1 = round(ngx->radio.ADF1_Active * 10.0);
-		radio.data.atc1 = round(ngx->radio.Transponder);
-		radio.data.brk1 = round(ngx->radio.ParkingBrake);
+		radio.data.com1.active = round_s(ngx->radio.COM1_Active * 100.0);
+		radio.data.com1.standby = round_s(ngx->radio.COM1_StandBy * 100.0);
+		radio.data.com2.active = round_s(ngx->radio.COM2_Active * 100.0);
+		radio.data.com2.standby = round_s(ngx->radio.COM2_StandBy * 100.0);
+		radio.data.nav1.active = round_s(ngx->radio.NAV1_Active * 100.0);
+		radio.data.nav1.standby = round_s(ngx->radio.NAV1_StandBy * 100.0);
+		radio.data.nav2.active = round_s(ngx->radio.NAV2_Active * 100.0);
+		radio.data.nav2.standby = round_s(ngx->radio.NAV2_StandBy * 100.0);
+		radio.data.adf1 = round_s(ngx->radio.ADF1_Active * 10.0);
+		radio.data.atc1 = round_s(ngx->radio.Transponder);
+		radio.data.brk1 = round_s(ngx->radio.ParkingBrake);
 		radio.update();
 		ngx->requestRadioData();
 
