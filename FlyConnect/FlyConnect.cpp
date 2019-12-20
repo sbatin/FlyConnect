@@ -3,12 +3,14 @@
 
 #include "stdafx.h"
 #include "Panel.h"
+#include "Joystick.h"
 #include "Events.h"
 #include "NgxInterface.h"
 
 Panel panel = Panel();
 RadioPanel radio = RadioPanel();
 Overhead overhead = Overhead();
+JoystickTQ throttle = JoystickTQ();
 
 void sendNGX_PanelState(PMDG_NGX_Data* state) {
 	auto seconds = time(NULL);
@@ -182,6 +184,39 @@ void run() {
 			ngx->send(EVT_OH_LIGHTS_R_ENGINE_START, input->eng_start_r, ngx->data.ENG_StartSelector[1]);
 		}
 
+		if (throttle.read()) {
+			auto input = &throttle.data;
+
+			if (input->flaps_up) {
+				ngx->send(EVT_CONTROL_STAND_FLAPS_LEVER_0, MOUSE_FLAG_LEFTSINGLE);
+			} else if (input->flaps_1) {
+				ngx->send(EVT_CONTROL_STAND_FLAPS_LEVER_1, MOUSE_FLAG_LEFTSINGLE);
+			} else if (input->flaps_2) {
+				ngx->send(EVT_CONTROL_STAND_FLAPS_LEVER_2, MOUSE_FLAG_LEFTSINGLE);
+			} else if (input->flaps_5) {
+				ngx->send(EVT_CONTROL_STAND_FLAPS_LEVER_5, MOUSE_FLAG_LEFTSINGLE);
+			} else if (input->flaps_10) {
+				ngx->send(EVT_CONTROL_STAND_FLAPS_LEVER_10, MOUSE_FLAG_LEFTSINGLE);
+			} else if (input->flaps_15) {
+				ngx->send(EVT_CONTROL_STAND_FLAPS_LEVER_15, MOUSE_FLAG_LEFTSINGLE);
+			} else if (input->flaps_25) {
+				ngx->send(EVT_CONTROL_STAND_FLAPS_LEVER_25, MOUSE_FLAG_LEFTSINGLE);
+			} else if (input->flaps_30) {
+				ngx->send(EVT_CONTROL_STAND_FLAPS_LEVER_30, MOUSE_FLAG_LEFTSINGLE);
+			}
+
+			if (input->sw_12) {
+				ngx->send(EVT_CONTROL_STAND_ENG1_START_LEVER, input->sw_12 - 1);
+			}
+
+			if (input->sw_34) {
+				ngx->send(EVT_CONTROL_STAND_ENG2_START_LEVER, input->sw_34 - 1);
+			}
+
+			ngx->send(EVT_CONTROL_STAND_PARK_BRAKE_LEVER, input->brake_sw);
+			ngx->send(EVT_OH_DOME_SWITCH, input->toggle_1 ? 0 : 1);
+		}
+
 		if (panel.read()) {
 			auto mcpInput = panel.mcpCtrl;
 			auto mipInput = panel.mipCtrl;
@@ -287,6 +322,10 @@ void lab() {
 	unsigned char value = 0;
 
 	while (1) {
+		if (throttle.read()) {
+			printf("SW1=%d, SW2=%d, SW3=%d, BRAKE=%d, FLAPS_UP=%d\n", throttle.data.sw_12, throttle.data.sw_34, throttle.data.sw_56, throttle.data.brake_sw, throttle.data.flaps_up);
+		}
+
 		if (panel.read()) {
 			printf(">>> Control received, Autobreak = %d, EFIS Range = %d, EFIS Mode = %d, Main Panel DU = %d, Lower DU = %d\n", panel.mipCtrl->autoBreak, panel.mcpCtrl->efisRange, panel.mcpCtrl->efisMode, panel.mipCtrl->mainPanelDU, panel.mipCtrl->lowerDU);
 			value+= (char)panel.mcpCtrl->value;
@@ -321,6 +360,7 @@ void lab() {
 }
 
 int main() {
+	throttle.connect();
 	panel.connect();
 	overhead.connect(L"COM6");
 	radio.connect(L"\\\\.\\COM20");

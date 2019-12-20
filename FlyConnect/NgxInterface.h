@@ -2,7 +2,6 @@
 #include "PMDG_NGX_SDK.h"
 #include "SimConnect.h"
 #include "Radio.h"
-#include "Joystick.h"
 
 enum DATA_REQUEST_ID {
 	DATA_REQUEST,
@@ -88,94 +87,6 @@ public:
 	}
 };
 
-static void HandleSimEvent(NgxInterface* ngx, SIMCONNECT_RECV_EVENT* evt) {
-	switch (evt->uEventID) {
-		case EVENT_INPUT_SW1:
-			if (evt->dwData) {
-				ngx->send(EVT_CONTROL_STAND_ENG1_START_LEVER, 0);
-			}
-			break;
-
-		case EVENT_INPUT_SW2:
-			if (evt->dwData) {
-				ngx->send(EVT_CONTROL_STAND_ENG1_START_LEVER, 1);
-			}
-			break;
-
-		case EVENT_INPUT_SW3:
-			if (evt->dwData) {
-				ngx->send(EVT_CONTROL_STAND_ENG2_START_LEVER, 0);
-			}
-			break;
-
-		case EVENT_INPUT_SW4:
-			if (evt->dwData) {
-				ngx->send(EVT_CONTROL_STAND_ENG2_START_LEVER, 1);
-			}
-			break;
-
-		case EVENT_INPUT_SW5:
-			ngx->send(EVT_FIRE_DETECTION_TEST_SWITCH, evt->dwData ? 2 : 1);
-			break;
-
-		case EVENT_INPUT_SW6:
-			ngx->send(EVT_FIRE_DETECTION_TEST_SWITCH, evt->dwData ? 0 : 1);
-			break;
-
-		case EVENT_INPUT_MODE_SW:
-			ngx->send(EVT_CONTROL_STAND_PARK_BRAKE_LEVER, evt->dwData);
-			break;
-
-		case EVENT_INPUT_FLAPS_UP:
-			if (evt->dwData) {
-				ngx->send(EVT_CONTROL_STAND_FLAPS_LEVER_0, MOUSE_FLAG_LEFTSINGLE);
-			}
-			break;
-
-		case EVENT_INPUT_FLAPS_1:
-			if (evt->dwData) {
-				ngx->send(EVT_CONTROL_STAND_FLAPS_LEVER_1, MOUSE_FLAG_LEFTSINGLE);
-			}
-			break;
-
-		case EVENT_INPUT_FLAPS_2:
-			if (evt->dwData) {
-				ngx->send(EVT_CONTROL_STAND_FLAPS_LEVER_2, MOUSE_FLAG_LEFTSINGLE);
-			}
-			break;
-
-		case EVENT_INPUT_FLAPS_5:
-			if (evt->dwData) {
-				ngx->send(EVT_CONTROL_STAND_FLAPS_LEVER_5, MOUSE_FLAG_LEFTSINGLE);
-			}
-			break;
-
-		case EVENT_INPUT_FLAPS_10:
-			if (evt->dwData) {
-				ngx->send(EVT_CONTROL_STAND_FLAPS_LEVER_10, MOUSE_FLAG_LEFTSINGLE);
-			}
-			break;
-
-		case EVENT_INPUT_FLAPS_15:
-			if (evt->dwData) {
-				ngx->send(EVT_CONTROL_STAND_FLAPS_LEVER_15, MOUSE_FLAG_LEFTSINGLE);
-			}
-			break;
-
-		case EVENT_INPUT_FLAPS_25:
-			if (evt->dwData) {
-				ngx->send(EVT_CONTROL_STAND_FLAPS_LEVER_25, MOUSE_FLAG_LEFTSINGLE);
-			}
-			break;
-
-		case EVENT_INPUT_FLAPS_30:
-			if (evt->dwData) {
-				ngx->send(EVT_CONTROL_STAND_FLAPS_LEVER_30, MOUSE_FLAG_LEFTSINGLE);
-			}
-			break;
-	}
-}
-
 static void CALLBACK MyDispatchProc(SIMCONNECT_RECV* pData, DWORD cbData, void *pContext) {
 	auto ngx = (NgxInterface*)pContext;
 
@@ -193,10 +104,6 @@ static void CALLBACK MyDispatchProc(SIMCONNECT_RECV* pData, DWORD cbData, void *
 	case SIMCONNECT_RECV_ID_QUIT:
 		printf("MyDispatchProc.Received: SIMCONNECT_RECV_ID_QUIT\n");
 		ngx->connected = 0;
-		break;
-
-	case SIMCONNECT_RECV_ID_EVENT:
-		HandleSimEvent(ngx, (SIMCONNECT_RECV_EVENT*)pData);
 		break;
 
 	case SIMCONNECT_RECV_ID_CLIENT_DATA: {
@@ -234,7 +141,6 @@ void NgxInterface::connect() {
 	if (FAILED(hr)) return;
 
 	printf("Connected to Flight Simulator\n");
-	Joystick_MapEvents(hSimConnect);
 	RadioInterface::connect(hSimConnect);
 
 	// Associate an ID with the PMDG data area name
