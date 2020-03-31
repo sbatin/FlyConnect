@@ -18,7 +18,7 @@ struct FSX_Radio_Data {
 
 struct RadioInterface {
 	template <typename T>
-	static T converBCD(T value) {
+	static T bcd2dec(T value) {
 		int k = 1;
 		T result = 0;
 
@@ -31,8 +31,21 @@ struct RadioInterface {
 		return result;
 	}
 
+	template <typename T>
+	static T dec2bcd(T dec) {
+		T result = 0;
+		int shift = 0;
+
+		while (dec) {
+			result +=  (dec % 10) << shift;
+			dec = dec / 10;
+			shift += 4;
+		}
+		return result;
+	}
+
 	static inline double convertBCD16(double frequency) {
-		return 100 + (double)converBCD((unsigned short)frequency) / 100;
+		return 100 + (double)bcd2dec((unsigned short)frequency) / 100;
 	}
 
 	static void connect(HANDLE hSimConnect) {
@@ -69,19 +82,31 @@ struct RadioInterface {
 		SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_COM2_RADIO_FRACT_INC, "COM2_RADIO_FRACT_INC_CARRY");
 		SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_COM2_RADIO_SWAP, "COM2_RADIO_SWAP");
 
-		SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_ADF1_RADIO_WHOLE_DEC, "ADF1_WHOLE_DEC");
-		SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_ADF1_RADIO_WHOLE_INC, "ADF1_WHOLE_INC");
-		SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_ADF1_RADIO_FRACT_DEC, "ADF_FRACT_DEC_CARRY");
-		SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_ADF1_RADIO_FRACT_INC, "ADF_FRACT_INC_CARRY");
-
 		SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_ATC1_RADIO_WHOLE_DEC, "XPNDR_100_DEC");
 		SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_ATC1_RADIO_WHOLE_INC, "XPNDR_100_INC");
 		SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_ATC1_RADIO_FRACT_DEC, "XPNDR_DEC_CARRY");
 		SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_ATC1_RADIO_FRACT_INC, "XPNDR_INC_CARRY");
+
+		SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_COM1_RADIO_SET, "COM1_RADIO_HZ_SET");
+		SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_COM2_RADIO_SET, "COM2_RADIO_HZ_SET");
+		SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_NAV1_RADIO_SET, "NAV1_RADIO_SET");
+		SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_NAV2_RADIO_SET, "NAV2_RADIO_SET");
+		SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_ADF1_RADIO_SET, "ADF_COMPLETE_SET");
 	}
 
 	static void toggle(HANDLE hSimConnect, EVENT_ID evt) {
 		SimConnect_TransmitClientEvent(hSimConnect, 0, evt, 0, SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+	}
+
+	static void set(HANDLE hSimConnect, EVENT_ID evt, DWORD value) {
+		if (evt == EVENT_COM1_RADIO_SET || evt == EVENT_COM2_RADIO_SET) {
+			value = value * 10000;
+		} else if (evt == EVENT_NAV1_RADIO_SET || evt == EVENT_NAV2_RADIO_SET) {
+			value = RadioInterface::dec2bcd(value);
+		} else {
+			value = RadioInterface::dec2bcd(value * 1000);
+		}
+		SimConnect_TransmitClientEvent(hSimConnect, 0, evt, value, SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
 	}
 
 	static void rotate(HANDLE hSimConnect, char value, EVENT_ID inc, EVENT_ID dec) {
@@ -101,8 +126,8 @@ struct RadioInterface {
 		dest->COM1_StandBy = convertBCD16(source->COM1_StandBy);
 		dest->COM2_Active  = convertBCD16(source->COM2_Active);
 		dest->COM2_StandBy = convertBCD16(source->COM2_StandBy);
-		dest->ADF1_Active  = (double)converBCD((unsigned int)source->ADF1_Active) / 10000;
-		dest->Transponder  = converBCD((unsigned short)source->Transponder);
+		dest->ADF1_Active  = (double)bcd2dec((unsigned int)source->ADF1_Active) / 10000;
+		dest->Transponder  = bcd2dec((unsigned short)source->Transponder);
 		dest->ParkingBrake = source->ParkingBrake;
 	}
 };

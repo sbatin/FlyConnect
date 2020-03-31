@@ -254,14 +254,19 @@ class RadioPanel {
 private:
 	struct radio_data_t prevData;
 	SerialPort port;
-	const unsigned short navMin = 10800;
-	const unsigned short navMax = 11795;
-	const unsigned short vhfMin = 11800;
-	const unsigned short vhfMax = 13697;
 public:
+	static const unsigned short navMin = 10800;
+	static const unsigned short navMax = 11795;
+	static const unsigned short vhfMin = 11800;
+	static const unsigned short vhfMax = 13697;
+	static const unsigned short adfMin = 1900;
+	static const unsigned short adfMax = 17500;
+
 	struct radio_data_t data;
 	struct radio_ctrl_t ctrl;
-	unsigned char XPDR_ModeSel;
+
+	RadioPanel() {};
+	~RadioPanel() {};
 
 	void connect(const wchar_t* path) {
 		data.com1.active = vhfMin;
@@ -272,11 +277,12 @@ public:
 		data.nav1.standby = navMax;
 		data.nav2.active = navMax;
 		data.nav2.standby = navMin;
-		data.adf1 = 1900;
+		data.adf1.active = adfMin;
+		data.adf1.standby = adfMax;
 		data.atc1 = 7777;
 
 		printf("VHF connecting...\n");
-		if (port.connect(path, 76800)) {
+		if (port.connect(path, 38400)) {
 			char *message = port.readMessage();
 			printf("VHF connected: %s\n", message);
 		}
@@ -287,27 +293,10 @@ public:
 	}
 
 	bool read() {
+		ctrl.encValue = 0;
 		if (port.readData(&ctrl)) {
-			ctrl.encWhole = -ctrl.encWhole;
-
-			switch (ctrl.buttons) {
-				case 0x80:
-					XPDR_ModeSel = 1;
-					break;
-				case 0x40:
-					XPDR_ModeSel = 2;
-					break;
-				case 0x20:
-					XPDR_ModeSel = 3;
-					break;
-				case 0x10:
-					XPDR_ModeSel = 4;
-					break;
-				case 0x01:
-					XPDR_ModeSel = 0;
-					break;
-				default:
-					break;
+			if (ctrl.XPDR_Mode) {
+				ctrl.XPDR_Mode = decodeRotaryState(ctrl.XPDR_Mode) - 1;
 			}
 
 			return true;
@@ -315,10 +304,4 @@ public:
 
 		return false;
 	}
-
-	RadioPanel() {
-	};
-
-	~RadioPanel(void) {
-	};
 };

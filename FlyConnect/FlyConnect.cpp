@@ -100,6 +100,18 @@ unsigned short round_s(double f) {
 	return (unsigned short)round(f);
 }
 
+unsigned short ngx_ADF1_StandBy = 3300;
+
+void ngx_ADF1_Change(char value) {
+	ngx_ADF1_StandBy += value;
+	if (ngx_ADF1_StandBy > RadioPanel::adfMax) {
+		ngx_ADF1_StandBy = RadioPanel::adfMin;
+	}
+	if (ngx_ADF1_StandBy < RadioPanel::adfMin) {
+		ngx_ADF1_StandBy = RadioPanel::adfMax;
+	}
+}
+
 void run() {
 	auto ngx = new NgxInterface();
 	ngx->connect();
@@ -115,7 +127,8 @@ void run() {
 		radio.data.nav1.standby = round_s(ngx->radio.NAV1_StandBy * 100.0);
 		radio.data.nav2.active = round_s(ngx->radio.NAV2_Active * 100.0);
 		radio.data.nav2.standby = round_s(ngx->radio.NAV2_StandBy * 100.0);
-		radio.data.adf1 = round_s(ngx->radio.ADF1_Active * 10.0);
+		radio.data.adf1.active = round_s(ngx->radio.ADF1_Active * 10.0);
+		radio.data.adf1.standby = ngx_ADF1_StandBy;
 		radio.data.atc1 = round_s(ngx->radio.Transponder);
 		radio.data.brk1 = round_s(ngx->radio.ParkingBrake);
 		radio.update();
@@ -126,28 +139,37 @@ void run() {
 
 			if (radio.ctrl.freqSwap == 1) ngx->radioToggle(EVENT_COM1_RADIO_SWAP);
 			if (radio.ctrl.freqSwap == 2) ngx->radioToggle(EVENT_NAV1_RADIO_SWAP);
+			if (radio.ctrl.freqSwap == 3) {
+				ngx->radioSet(EVENT_ADF1_RADIO_SET, ngx_ADF1_StandBy);
+				ngx_ADF1_StandBy = ngx->radio.ADF1_Active * 10.0;
+			}
 			if (radio.ctrl.freqSwap == 4) ngx->radioToggle(EVENT_COM2_RADIO_SWAP);
 			if (radio.ctrl.freqSwap == 5) ngx->radioToggle(EVENT_NAV2_RADIO_SWAP);
 
-			if (radio.ctrl.encWhole) {
-				if (freqSelected == 1) ngx->radioRotate(radio.ctrl.encWhole, EVENT_COM1_RADIO_WHOLE_INC, EVENT_COM1_RADIO_WHOLE_DEC);
-				if (freqSelected == 2) ngx->radioRotate(radio.ctrl.encWhole, EVENT_NAV1_RADIO_WHOLE_INC, EVENT_NAV1_RADIO_WHOLE_DEC);
-				if (freqSelected == 3) for (int i = 0; i < 10; i++) ngx->radioRotate(radio.ctrl.encWhole, EVENT_ADF1_RADIO_WHOLE_INC, EVENT_ADF1_RADIO_WHOLE_DEC);
-				if (freqSelected == 4) ngx->radioRotate(radio.ctrl.encWhole, EVENT_COM2_RADIO_WHOLE_INC, EVENT_COM2_RADIO_WHOLE_DEC);
-				if (freqSelected == 5) ngx->radioRotate(radio.ctrl.encWhole, EVENT_NAV2_RADIO_WHOLE_INC, EVENT_NAV2_RADIO_WHOLE_DEC);
-				if (freqSelected == 6) for (int i = 0; i < 64; i++) ngx->radioRotate(radio.ctrl.encWhole, EVENT_ATC1_RADIO_FRACT_INC, EVENT_ATC1_RADIO_FRACT_DEC);
+			switch (radio.ctrl.encIndex) {
+				case RADIO_WHOLE:
+					if (freqSelected == 1) ngx->radioRotate(radio.ctrl.encValue, EVENT_COM1_RADIO_WHOLE_INC, EVENT_COM1_RADIO_WHOLE_DEC);
+					if (freqSelected == 2) ngx->radioRotate(radio.ctrl.encValue, EVENT_NAV1_RADIO_WHOLE_INC, EVENT_NAV1_RADIO_WHOLE_DEC);
+					if (freqSelected == 3) ngx_ADF1_Change(radio.ctrl.encValue * 100);
+					if (freqSelected == 4) ngx->radioRotate(radio.ctrl.encValue, EVENT_COM2_RADIO_WHOLE_INC, EVENT_COM2_RADIO_WHOLE_DEC);
+					if (freqSelected == 5) ngx->radioRotate(radio.ctrl.encValue, EVENT_NAV2_RADIO_WHOLE_INC, EVENT_NAV2_RADIO_WHOLE_DEC);
+					break;
+				case RADIO_FRACT:
+					if (freqSelected == 1) ngx->radioRotate(radio.ctrl.encValue, EVENT_COM1_RADIO_FRACT_INC, EVENT_COM1_RADIO_FRACT_DEC);
+					if (freqSelected == 2) ngx->radioRotate(radio.ctrl.encValue, EVENT_NAV1_RADIO_FRACT_INC, EVENT_NAV1_RADIO_FRACT_DEC);
+					if (freqSelected == 3) ngx_ADF1_Change(radio.ctrl.encValue);
+					if (freqSelected == 4) ngx->radioRotate(radio.ctrl.encValue, EVENT_COM2_RADIO_FRACT_INC, EVENT_COM2_RADIO_FRACT_DEC);
+					if (freqSelected == 5) ngx->radioRotate(radio.ctrl.encValue, EVENT_NAV2_RADIO_FRACT_INC, EVENT_NAV2_RADIO_FRACT_DEC);
+					break;
+				case RADIO_ATC_L:
+					for (int i = 0; i < 64; i++) ngx->radioRotate(radio.ctrl.encValue, EVENT_ATC1_RADIO_FRACT_INC, EVENT_ATC1_RADIO_FRACT_DEC);
+					break;
+				case RADIO_ATC_R:
+					ngx->radioRotate(radio.ctrl.encValue, EVENT_ATC1_RADIO_FRACT_INC, EVENT_ATC1_RADIO_FRACT_DEC);
+					break;
 			}
 
-			if (radio.ctrl.encFract) {
-				if (freqSelected == 1) ngx->radioRotate(radio.ctrl.encFract, EVENT_COM1_RADIO_FRACT_INC, EVENT_COM1_RADIO_FRACT_DEC);
-				if (freqSelected == 2) ngx->radioRotate(radio.ctrl.encFract, EVENT_NAV1_RADIO_FRACT_INC, EVENT_NAV1_RADIO_FRACT_DEC);
-				if (freqSelected == 3) ngx->radioRotate(radio.ctrl.encFract, EVENT_ADF1_RADIO_FRACT_INC, EVENT_ADF1_RADIO_FRACT_DEC);
-				if (freqSelected == 4) ngx->radioRotate(radio.ctrl.encFract, EVENT_COM2_RADIO_FRACT_INC, EVENT_COM2_RADIO_FRACT_DEC);
-				if (freqSelected == 5) ngx->radioRotate(radio.ctrl.encFract, EVENT_NAV2_RADIO_FRACT_INC, EVENT_NAV2_RADIO_FRACT_DEC);
-				if (freqSelected == 6) ngx->radioRotate(radio.ctrl.encFract, EVENT_ATC1_RADIO_FRACT_INC, EVENT_ATC1_RADIO_FRACT_DEC);
-			}
-
-			ngx->send(EVT_TCAS_MODE, radio.XPDR_ModeSel, ngx->data.XPDR_ModeSel);
+			ngx->send(EVT_TCAS_MODE, radio.ctrl.XPDR_Mode, ngx->data.XPDR_ModeSel);
 		}
 
 		if (overhead.read()) {
@@ -332,7 +354,7 @@ void lab() {
 		}
 
 		if (radio.read()) {
-			printf(">>> Control received: freq = %d; swap = %d; buttons = %x\n", radio.ctrl.freqSelected, radio.ctrl.freqSwap, radio.ctrl.buttons);
+			printf(">>> Control received: freq = %d; swap = %d; XPDR_Mode = %d\n", radio.ctrl.freqSelected, radio.ctrl.freqSwap, radio.ctrl.XPDR_Mode);
 		}
 
 		time_t seconds = time(NULL);
@@ -350,12 +372,14 @@ void lab() {
 		panel.mipData->annunFlapsTransit = 1;
 		panel.mipData->annunLGearRed = 1;
 		panel.send();
-		radio.data.adf1 = 10000 + counter1;
-		radio.data.brk1 = 0;
+		radio.data.adf1.active = 10000 + counter1;
+		radio.data.brk1 = 1;
+		radio.data.fail = 1;
+		radio.data.atc1 = 7777;
 		radio.update();
 		counter1++;
 		if (counter1 == 16) counter1 = 0;
-		Sleep(20);
+		Sleep(50);
 	}
 }
 
@@ -363,7 +387,7 @@ int main() {
 	throttle.connect();
 	panel.connect();
 	overhead.connect(L"COM6");
-	radio.connect(L"\\\\.\\COM20");
+	radio.connect(L"\\\\.\\COM15");
 	//lab();
 	run();
 	panel.disconnect();

@@ -78,6 +78,10 @@ public:
 		SimConnect_RequestDataOnSimObjectType(hSimConnect, RADIO_REQUEST, RADIO_DEF, 0, SIMCONNECT_SIMOBJECT_TYPE_USER);
 	}
 
+	void radioSet(EVENT_ID evt, DWORD value) {
+		RadioInterface::set(hSimConnect, evt, value);
+	}
+
 	void radioToggle(EVENT_ID evt) {
 		RadioInterface::toggle(hSimConnect, evt);
 	}

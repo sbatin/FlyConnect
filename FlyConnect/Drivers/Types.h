@@ -164,12 +164,20 @@ struct mcp_ctrl_t {
 };
 #pragma pack(pop)
 
+#define RADIO_WHOLE 0
+#define RADIO_FRACT 1
+#define RADIO_ATC_L 2
+#define RADIO_ATC_R 3
+
 struct radio_ctrl_t {
-	unsigned char encWhole;
-	unsigned char encFract;
+	unsigned char encIndex;
+	unsigned char encValue;
 	unsigned char freqSelected;
 	unsigned char freqSwap;
-	unsigned char buttons;
+	unsigned char XPDR_Mode  : 5;
+	unsigned char XPDR_Ident : 1;
+	unsigned char XPDR_Sel   : 1;
+	unsigned char ALT_Source : 1;
 };
 
 struct frequency_t {
@@ -182,9 +190,10 @@ struct radio_data_t {
 	frequency_t com2;
 	frequency_t nav1;
 	frequency_t nav2;
-	unsigned short adf1;
+	frequency_t adf1;
 	unsigned short brk1 : 1;
-	unsigned short atc1 : 15;
+	unsigned short fail : 1;
+	unsigned short atc1 : 14;
 };
 
 struct overhead_ctrl_t {
