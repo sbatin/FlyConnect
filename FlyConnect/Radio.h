@@ -110,11 +110,11 @@ struct RadioInterface {
 	}
 
 	static void rotate(HANDLE hSimConnect, char value, EVENT_ID inc, EVENT_ID dec) {
-		if (value > 0)
+		if (value > 0) {
 			SimConnect_TransmitClientEvent(hSimConnect, 0, inc, 0, SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-
-		if (value < 0)
+		} else if (value < 0) {
 			SimConnect_TransmitClientEvent(hSimConnect, 0, dec, 0, SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+		}
 	}
 
 	static void setData(FSX_Radio_Data* dest, const FSX_Radio_Data* source) {

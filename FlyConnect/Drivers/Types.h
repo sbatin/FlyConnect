@@ -191,9 +191,14 @@ struct radio_data_t {
 	frequency_t nav1;
 	frequency_t nav2;
 	frequency_t adf1;
-	unsigned short brk1 : 1;
-	unsigned short fail : 1;
-	unsigned short atc1 : 14;
+	unsigned short atc1;
+	unsigned char atcFail  : 1;
+	unsigned char atcLed0  : 1;
+	unsigned char atcLed1  : 1;
+	unsigned char atcLed2  : 1;
+	unsigned char atcLeds  : 4;
+	unsigned char parking  : 1;
+	unsigned char notInUse : 7;
 };
 
 struct overhead_ctrl_t {

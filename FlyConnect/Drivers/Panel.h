@@ -122,43 +122,43 @@ public:
 		hid_close(hidPanel);
 	}
 
-	void lightsTest() {
+	void test(unsigned char on) {
 		auto seconds = time(NULL);
 
-		mcpData->speedCrsL = seconds % 3 == 0 ? 0x888F8888 : DISP_OFF_MASK;
-		mcpData->vspeedCrsR = seconds % 3 == 0 ? 0x888C8880 : DISP_OFF_MASK;
-		mcpData->altitudeHdg = seconds % 3 == 0 ? 0x88888880 : DISP_OFF_MASK;
-		mcpData->alt_hld = 1;
-		mcpData->app = 1;
-		mcpData->at_arm = 1;
-		mcpData->cmd_a = 1;
-		mcpData->cmd_b = 1;
-		mcpData->cws_a = 1;
-		mcpData->cws_b = 1;
-		mcpData->fd_ca = 1;
-		mcpData->fd_fo = 1;
-		mcpData->hdg_sel = 1;
-		mcpData->lnav = 1;
-		mcpData->lvl_chg = 1;
-		mcpData->n1 = 1;
-		mcpData->speed = 1;
-		mcpData->vnav = 1;
-		mcpData->vor_loc = 1;
-		mcpData->vs = 1;
-		mipData->annunNGearGrn = 1;
-		mipData->annunNGearRed = 1;
-		mipData->annunRGearGrn = 1;
-		mipData->annunRGearRed = 1;
-		mipData->annunLGearGrn = 1;
-		mipData->annunLGearRed = 1;
-		mipData->annunAntiskidInop = 1;
-		mipData->annunAutobreakDisarm = 1;
-		mipData->annunFlapsExt = 1;
-		mipData->annunFlapsTransit = 1;
-		mipData->annunStabOutOfTrim = 1;
-		mipData->annunBelowGS = 1;
-		mipData->annunSpeedbrakeArmed = 1;
-		mipData->annunSpeedbrakNotArm = 1;
+		mcpData->speedCrsL = seconds % 3 == 0 && on ? 0x888F8888 : DISP_OFF_MASK;
+		mcpData->vspeedCrsR = seconds % 3 == 0 && on ? 0x888C8880 : DISP_OFF_MASK;
+		mcpData->altitudeHdg = seconds % 3 == 0 && on ? 0x88888880 : DISP_OFF_MASK;
+		mcpData->alt_hld = on;
+		mcpData->app = on;
+		mcpData->at_arm = on;
+		mcpData->cmd_a = on;
+		mcpData->cmd_b = on;
+		mcpData->cws_a = on;
+		mcpData->cws_b = on;
+		mcpData->fd_ca = on;
+		mcpData->fd_fo = on;
+		mcpData->hdg_sel = on;
+		mcpData->lnav = on;
+		mcpData->lvl_chg = on;
+		mcpData->n1 = on;
+		mcpData->speed = on;
+		mcpData->vnav = on;
+		mcpData->vor_loc = on;
+		mcpData->vs = on;
+		mipData->annunNGearGrn = on;
+		mipData->annunNGearRed = on;
+		mipData->annunRGearGrn = on;
+		mipData->annunRGearRed = on;
+		mipData->annunLGearGrn = on;
+		mipData->annunLGearRed = on;
+		mipData->annunAntiskidInop = on;
+		mipData->annunAutobreakDisarm = on;
+		mipData->annunFlapsExt = on;
+		mipData->annunFlapsTransit = on;
+		mipData->annunStabOutOfTrim = on;
+		mipData->annunBelowGS = on;
+		mipData->annunSpeedbrakeArmed = on;
+		mipData->annunSpeedbrakNotArm = on;
 	}
 
 	void setMCPDisplays(unsigned short courseL, float IASKtsMach, DisplayState IASState, unsigned short heading, unsigned short altitude, short vertSpeed, bool vsEnabled, unsigned short courseR) {
@@ -288,8 +288,32 @@ public:
 		}
 	}
 
+	void test(unsigned char on) {
+		auto seconds = time(NULL);
+
+		unsigned short vhf_test_1 = seconds % 3 == 0 && on ? 18888 : 0;
+		unsigned short vhf_test_2 = seconds % 3 == 1 && on ? 18888 : 0;
+		unsigned short vhf_test_3 = seconds % 3 == 2 && on ? 18888 : 0;
+
+		data.com1.active = vhf_test_1;
+		data.com1.standby = vhf_test_1;
+		data.com2.active = vhf_test_1;
+		data.com2.standby = vhf_test_1;
+		data.nav1.active = vhf_test_2;
+		data.nav1.standby = vhf_test_2;
+		data.nav2.active = vhf_test_2;
+		data.nav2.standby = vhf_test_2;
+		data.adf1.active = vhf_test_3;
+		data.adf1.standby = vhf_test_3;
+		data.atc1 = 8888;
+	}
+
 	void update() {
-		port.sendData(&data);
+		if (memcmp(&prevData, &data, sizeof(radio_data_t))) {
+			//printf("COM1 %d, COM2 %d, NAV1 %d, NAV2 %d, ADF1 %d\n", data.com1.active, data.com2.active, data.nav1.active, data.nav2.active, data.adf1.active);
+			port.sendData(&data);
+			prevData = data;
+		}
 	}
 
 	bool read() {

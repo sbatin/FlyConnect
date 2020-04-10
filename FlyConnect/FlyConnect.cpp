@@ -12,27 +12,46 @@ RadioPanel radio = RadioPanel();
 Overhead overhead = Overhead();
 JoystickTQ throttle = JoystickTQ();
 
-void sendNGX_PanelState(PMDG_NGX_Data* state) {
-	auto seconds = time(NULL);
-	if (state->ELEC_BatSelector) {
-		DisplayState IASState = Blank;
+unsigned short round_s(double f) {
+	return (unsigned short)round(f);
+}
 
-		if (!state->MCP_IASBlank) {
-			if (state->MCP_IASOverspeedFlash && seconds % 2 == 0) {
-				IASState = Overspeed;
-			} else if (state->MCP_IASUnderspeedFlash && seconds % 2 == 0) {
-				IASState = Underspeed;
-			} else {
-				IASState = Enabled;
-			}
-		}
+unsigned short ngx_ADF1_StandBy = 3300;
 
-		panel.setMCPDisplays(state->MCP_Course[0], state->MCP_IASMach, IASState, state->MCP_Heading, state->MCP_Altitude, state->MCP_VertSpeed, !state->MCP_VertSpeedBlank, state->MCP_Course[1]);
-	} else {
-		panel.mcpData->speedCrsL = DISP_OFF_MASK;
-		panel.mcpData->vspeedCrsR = DISP_OFF_MASK;
-		panel.mcpData->altitudeHdg = DISP_OFF_MASK;
+void ngx_ADF1_Change(char value) {
+	ngx_ADF1_StandBy += value;
+	if (ngx_ADF1_StandBy > RadioPanel::adfMax) {
+		ngx_ADF1_StandBy = RadioPanel::adfMin;
+	} else if (ngx_ADF1_StandBy < RadioPanel::adfMin) {
+		ngx_ADF1_StandBy = RadioPanel::adfMax;
 	}
+}
+
+void sendNGX_PanelState(PMDG_NGX_Data* state, FSX_Radio_Data* radioState) {
+	// no power, turn all the panels off
+	if (!state->ELEC_BatSelector) {
+		panel.test(0);
+		panel.send();
+		radio.test(0);
+		radio.update();
+		return;
+	}
+
+	auto seconds = time(NULL);
+
+	DisplayState IASState = Blank;
+
+	if (!state->MCP_IASBlank) {
+		if (state->MCP_IASOverspeedFlash && seconds % 2 == 0) {
+			IASState = Overspeed;
+		} else if (state->MCP_IASUnderspeedFlash && seconds % 2 == 0) {
+			IASState = Underspeed;
+		} else {
+			IASState = Enabled;
+		}
+	}
+
+	panel.setMCPDisplays(state->MCP_Course[0], state->MCP_IASMach, IASState, state->MCP_Heading, state->MCP_Altitude, state->MCP_VertSpeed, !state->MCP_VertSpeedBlank, state->MCP_Course[1]);
 
 	panel.mcpData->alt_hld = state->MCP_annunALT_HOLD;
 	panel.mcpData->app = state->MCP_annunAPP;
@@ -83,8 +102,8 @@ void sendNGX_PanelState(PMDG_NGX_Data* state) {
 	panel.mipData->annunWarnOvht = state->WARN_annunOVHT_DET;
 
 	// test
-	if (state->MAIN_LightsSelector == 0 && state->ELEC_BatSelector > 0) {
-		panel.lightsTest();
+	if (state->MAIN_LightsSelector == 0) {
+		panel.test(1);
 	// bright
 	} else if (state->MAIN_LightsSelector == 1) {
 		panel.mcpData->brightness = 8;
@@ -94,22 +113,28 @@ void sendNGX_PanelState(PMDG_NGX_Data* state) {
 	}
 
 	panel.send();
-}
 
-unsigned short round_s(double f) {
-	return (unsigned short)round(f);
-}
+	radio.data.com1.active = round_s(radioState->COM1_Active * 100.0);
+	radio.data.com1.standby = round_s(radioState->COM1_StandBy * 100.0);
+	radio.data.com2.active = round_s(radioState->COM2_Active * 100.0);
+	radio.data.com2.standby = round_s(radioState->COM2_StandBy * 100.0);
+	radio.data.nav1.active = round_s(radioState->NAV1_Active * 100.0);
+	radio.data.nav1.standby = round_s(radioState->NAV1_StandBy * 100.0);
+	radio.data.nav2.active = round_s(radioState->NAV2_Active * 100.0);
+	radio.data.nav2.standby = round_s(radioState->NAV2_StandBy * 100.0);
+	radio.data.adf1.active = round_s(radioState->ADF1_Active * 10.0);
+	radio.data.adf1.standby = ngx_ADF1_StandBy;
+	radio.data.atc1 = round_s(radioState->Transponder);
+	radio.data.parking = round_s(radioState->ParkingBrake);
+	radio.data.atcLed0 = 1;
+	radio.data.atcLed1 = state->XPDR_ModeSel && !state->XPDR_XpndrSelector_2;
+	radio.data.atcLed2 = state->XPDR_ModeSel && state->XPDR_XpndrSelector_2;
+	radio.data.atcFail = state->XPDR_annunFAIL;
 
-unsigned short ngx_ADF1_StandBy = 3300;
-
-void ngx_ADF1_Change(char value) {
-	ngx_ADF1_StandBy += value;
-	if (ngx_ADF1_StandBy > RadioPanel::adfMax) {
-		ngx_ADF1_StandBy = RadioPanel::adfMin;
+	if (state->MAIN_LightsSelector == 0) {
+		radio.test(1);
 	}
-	if (ngx_ADF1_StandBy < RadioPanel::adfMin) {
-		ngx_ADF1_StandBy = RadioPanel::adfMax;
-	}
+	radio.update();
 }
 
 void run() {
@@ -117,21 +142,7 @@ void run() {
 	ngx->connect();
 
 	while (ngx->connected) {
-		sendNGX_PanelState(&ngx->data);
-
-		radio.data.com1.active = round_s(ngx->radio.COM1_Active * 100.0);
-		radio.data.com1.standby = round_s(ngx->radio.COM1_StandBy * 100.0);
-		radio.data.com2.active = round_s(ngx->radio.COM2_Active * 100.0);
-		radio.data.com2.standby = round_s(ngx->radio.COM2_StandBy * 100.0);
-		radio.data.nav1.active = round_s(ngx->radio.NAV1_Active * 100.0);
-		radio.data.nav1.standby = round_s(ngx->radio.NAV1_StandBy * 100.0);
-		radio.data.nav2.active = round_s(ngx->radio.NAV2_Active * 100.0);
-		radio.data.nav2.standby = round_s(ngx->radio.NAV2_StandBy * 100.0);
-		radio.data.adf1.active = round_s(ngx->radio.ADF1_Active * 10.0);
-		radio.data.adf1.standby = ngx_ADF1_StandBy;
-		radio.data.atc1 = round_s(ngx->radio.Transponder);
-		radio.data.brk1 = round_s(ngx->radio.ParkingBrake);
-		radio.update();
+		sendNGX_PanelState(&ngx->data, &ngx->radio);
 		ngx->requestRadioData();
 
 		if (radio.read()) {
@@ -170,6 +181,9 @@ void run() {
 			}
 
 			ngx->send(EVT_TCAS_MODE, radio.ctrl.XPDR_Mode, ngx->data.XPDR_ModeSel);
+			ngx->send(EVT_TCAS_XPNDR, radio.ctrl.XPDR_Sel, ngx->data.XPDR_XpndrSelector_2);
+			ngx->send(EVT_TCAS_ALTSOURCE, radio.ctrl.ALT_Source, ngx->data.XPDR_AltSourceSel_2);
+			ngx->pressButton(EVT_TCAS_IDENT, radio.ctrl.XPDR_Ident);
 		}
 
 		if (overhead.read()) {
@@ -242,8 +256,6 @@ void run() {
 		if (panel.read()) {
 			auto mcpInput = panel.mcpCtrl;
 			auto mipInput = panel.mipCtrl;
-			
-			printf(">>> Control received, MCP_Enc_Val = %d, MCP_Enc_Num = %d\n", mcpInput->value, mcpInput->encoder);
 
 			switch (mcpInput->encoder) {
 				case MCP_ALTITUDE:
@@ -349,6 +361,7 @@ void lab() {
 		}
 
 		if (panel.read()) {
+			printf(">>> Control received, MCP_Enc_Val = %d, MCP_Enc_Num = %d\n", panel.mcpCtrl->value, panel.mcpCtrl->encoder);
 			printf(">>> Control received, Autobreak = %d, EFIS Range = %d, EFIS Mode = %d, Main Panel DU = %d, Lower DU = %d\n", panel.mipCtrl->autoBreak, panel.mcpCtrl->efisRange, panel.mcpCtrl->efisMode, panel.mipCtrl->mainPanelDU, panel.mipCtrl->lowerDU);
 			value+= (char)panel.mcpCtrl->value;
 		}
@@ -372,13 +385,15 @@ void lab() {
 		panel.mipData->annunFlapsTransit = 1;
 		panel.mipData->annunLGearRed = 1;
 		panel.send();
+		radio.data.nav1.active = 0;
+		radio.data.nav1.standby = 0;
 		radio.data.adf1.active = 10000 + counter1;
-		radio.data.brk1 = 1;
-		radio.data.fail = 1;
+		radio.data.parking = 1;
+		radio.data.atcFail = 1;
 		radio.data.atc1 = 7777;
 		radio.update();
 		counter1++;
-		if (counter1 == 16) counter1 = 0;
+		if (counter1 == 999) counter1 = 0;
 		Sleep(50);
 	}
 }
