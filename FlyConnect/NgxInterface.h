@@ -14,10 +14,10 @@ using namespace std;
 class NgxInterface {
 private:
 	PMDG_NGX_Control control;
-	HANDLE hSimConnect = NULL;
 	HANDLE pollForDataThread;
 	map<unsigned int, unsigned int> currValues;
 public:
+	HANDLE hSimConnect = NULL;
 	int connected;
 	PMDG_NGX_Data data;
 	FSX_Radio_Data radio;
@@ -96,14 +96,18 @@ static void CALLBACK MyDispatchProc(SIMCONNECT_RECV* pData, DWORD cbData, void *
 
 	switch (pData->dwID) {
 	case SIMCONNECT_RECV_ID_EXCEPTION: {
-		SIMCONNECT_RECV_EXCEPTION * except = (SIMCONNECT_RECV_EXCEPTION*)pData;
+		auto except = (SIMCONNECT_RECV_EXCEPTION*)pData;
 		printf("***** EXCEPTION=%d  SendID=%d  Index=%d  cbData=%d\n", except->dwException, except->dwSendID, except->dwIndex, cbData);
 		break;
 	}
 
-	case SIMCONNECT_RECV_ID_OPEN:
-		printf("MyDispatchProc.Received: SIMCONNECT_RECV_ID_OPEN\n");
+	case SIMCONNECT_RECV_ID_OPEN: {
+		auto open = (SIMCONNECT_RECV_OPEN*)pData;
+		printf("Open: %s %d.%d.%d.%d  SimConnectVersion=%d.%d.%d.%d\n", open->szApplicationName,
+			open->dwApplicationVersionMajor, open->dwApplicationVersionMinor, open->dwApplicationBuildMajor, open->dwApplicationBuildMinor,
+			open->dwSimConnectVersionMajor, open->dwSimConnectVersionMinor, open->dwSimConnectBuildMajor, open->dwSimConnectBuildMinor);
 		break;
+	}
 
 	case SIMCONNECT_RECV_ID_QUIT:
 		printf("MyDispatchProc.Received: SIMCONNECT_RECV_ID_QUIT\n");

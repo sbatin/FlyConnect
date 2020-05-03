@@ -6,6 +6,7 @@
 #include "Joystick.h"
 #include "Events.h"
 #include "NgxInterface.h"
+#include "LandingRate.h"
 
 Panel panel = Panel();
 RadioPanel radio = RadioPanel();
@@ -137,12 +138,40 @@ void sendNGX_PanelState(PMDG_NGX_Data* state, FSX_Radio_Data* radioState) {
 	radio.update();
 }
 
+static char message_text[200];
+static char prev_gnd = 1;
+static double prev_alt = 0;
+
+void logLandingRate(HANDLE hSimConnect, FSX_Radio_Data* radioState) {
+	auto curr_alt = radioState->RadioAltitude;
+	auto curr_vs = radioState->VerticalSpeed * 60;
+	auto curr_g = radioState->GForce;
+	auto on_ground = round_s(radioState->SimOnGround);
+
+	// monitor mode
+	if (abs(curr_alt - prev_alt) > 0.05 && curr_alt < 50) {
+		printf("%d  alt=%.1f, vs=%.1f, g=%.2f\n", on_ground, curr_alt, curr_vs, curr_g);
+
+		// landing
+		if (on_ground > prev_gnd) {
+			unsigned short abs_vs = round_s(abs(curr_vs));
+			const char* description = LandingRate::getA3xxRating(abs_vs);
+			snprintf(message_text, sizeof(message_text), "Landing monitor: %s (v/s = %d feet/min, %.2fg)", description, abs_vs, curr_g);
+			SimConnect_Text(hSimConnect, SIMCONNECT_TEXT_TYPE_PRINT_WHITE, 50, 0x30, sizeof(message_text), (void*)message_text);
+		}
+	}
+
+	prev_gnd = on_ground;
+	prev_alt = curr_alt;
+}
+
 void run() {
 	auto ngx = new NgxInterface();
 	ngx->connect();
 
 	while (ngx->connected) {
 		sendNGX_PanelState(&ngx->data, &ngx->radio);
+		logLandingRate(ngx->hSimConnect, &ngx->radio);
 		ngx->requestRadioData();
 
 		if (radio.read()) {
@@ -152,7 +181,7 @@ void run() {
 			if (radio.ctrl.freqSwap == 2) ngx->radioToggle(EVENT_NAV1_RADIO_SWAP);
 			if (radio.ctrl.freqSwap == 3) {
 				ngx->radioSet(EVENT_ADF1_RADIO_SET, ngx_ADF1_StandBy);
-				ngx_ADF1_StandBy = ngx->radio.ADF1_Active * 10.0;
+				ngx_ADF1_StandBy = round_s(ngx->radio.ADF1_Active * 10.0);
 			}
 			if (radio.ctrl.freqSwap == 4) ngx->radioToggle(EVENT_COM2_RADIO_SWAP);
 			if (radio.ctrl.freqSwap == 5) ngx->radioToggle(EVENT_NAV2_RADIO_SWAP);

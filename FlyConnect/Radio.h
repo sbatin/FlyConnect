@@ -14,6 +14,10 @@ struct FSX_Radio_Data {
 	double ADF1_Active;
 	double Transponder;
 	double ParkingBrake;
+	double VerticalSpeed;
+	double RadioAltitude;
+	double GForce;
+	double SimOnGround;
 };
 
 struct RadioInterface {
@@ -60,6 +64,10 @@ struct RadioInterface {
 		SimConnect_AddToDataDefinition(hSimConnect, RADIO_DEF, "ADF ACTIVE FREQUENCY:1", "Frequency ADF BCD32");
 		SimConnect_AddToDataDefinition(hSimConnect, RADIO_DEF, "TRANSPONDER CODE:1", "BCO16");
 		SimConnect_AddToDataDefinition(hSimConnect, RADIO_DEF, "BRAKE PARKING INDICATOR", "Bool");
+		SimConnect_AddToDataDefinition(hSimConnect, RADIO_DEF, "VERTICAL SPEED", "Feet per second");
+		SimConnect_AddToDataDefinition(hSimConnect, RADIO_DEF, "PLANE ALT ABOVE GROUND", "feet");
+		SimConnect_AddToDataDefinition(hSimConnect, RADIO_DEF, "G FORCE", "GForce");
+		SimConnect_AddToDataDefinition(hSimConnect, RADIO_DEF, "SIM ON GROUND", "Bool");
 
 		SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_NAV1_RADIO_WHOLE_DEC, "NAV1_RADIO_WHOLE_DEC");
 		SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_NAV1_RADIO_WHOLE_INC, "NAV1_RADIO_WHOLE_INC");
@@ -129,5 +137,9 @@ struct RadioInterface {
 		dest->ADF1_Active  = (double)bcd2dec((unsigned int)source->ADF1_Active) / 10000;
 		dest->Transponder  = bcd2dec((unsigned short)source->Transponder);
 		dest->ParkingBrake = source->ParkingBrake;
+		dest->VerticalSpeed = source->VerticalSpeed;
+		dest->RadioAltitude = source->RadioAltitude;
+		dest->GForce        = source->GForce;
+		dest->SimOnGround   = source->SimOnGround;
 	}
 };

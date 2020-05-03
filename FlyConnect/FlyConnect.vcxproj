@@ -153,6 +153,7 @@
     <ClInclude Include="Events.h" />
     <ClInclude Include="hidapi.h" />
     <ClInclude Include="Joystick.h" />
+    <ClInclude Include="LandingRate.h" />
     <ClInclude Include="NgxInterface.h" />
     <ClInclude Include="Radio.h" />
     <ClInclude Include="stdafx.h" />
