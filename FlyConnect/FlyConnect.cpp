@@ -306,10 +306,10 @@ void run() {
 					ngx->adjust(EVENT_VERTSPEED_SELECTOR, mcpInput->value);
 					break;
 				case EFIS_BARO:
-					ngx->adjust(EVENT_BARO_SELECTOR_L, mcpInput->value);
+					ngx->adjust(EVENT_BARO_SELECTOR_L, -mcpInput->value);
 					break;
 				case EFIS_MINS:
-					ngx->adjust(EVENT_MINS_SELECTOR_L, mcpInput->value);
+					ngx->adjust(EVENT_MINS_SELECTOR_L, -mcpInput->value);
 					break;
 			}
 
@@ -361,6 +361,9 @@ void run() {
 			// EFIS
 			ngx->send(EVT_EFIS_CPT_MODE, mcpInput->efisMode, ngx->data.EFIS_ModeSel[0]);
 			ngx->send(EVT_EFIS_CPT_RANGE, mcpInput->efisRange, ngx->data.EFIS_RangeSel[0]);
+			ngx->send(EVT_EFIS_CPT_MINIMUMS_RADIO_BARO, mcpInput->efisMINS, ngx->data.EFIS_MinsSelBARO[0]);
+			ngx->send(EVT_EFIS_CPT_BARO_IN_HPA, mcpInput->efisBARO ? 0 : 1, ngx->data.EFIS_BaroSelHPA[0]);
+
 			ngx->pressButton(EVT_EFIS_CPT_WXR, mcpInput->efisWXR);
 			ngx->pressButton(EVT_EFIS_CPT_STA, mcpInput->efisSTA);
 			ngx->pressButton(EVT_EFIS_CPT_WPT, mcpInput->efisWPT);

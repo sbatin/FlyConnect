@@ -151,10 +151,10 @@ struct mcp_ctrl_t {
 	unsigned char /* NC */ : 1;
 	unsigned char efisVOR2 : 1;
 	unsigned char efisADF2 : 1;
-	unsigned char /* NC */ : 1;
+	unsigned char efisBARO : 1;
 	unsigned char efisMTRS : 1;
 	unsigned char efisFPV  : 1;
-	unsigned char /* NC */ : 1;
+	unsigned char efisMINS : 1;
 	unsigned char efisADF1 : 1;
 	unsigned char efisVOR1 : 1;
 	unsigned char efisTERR : 1;
