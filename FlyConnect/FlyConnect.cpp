@@ -249,6 +249,14 @@ void run() {
 			ngx->send(EVT_OH_LIGHTS_R_ENGINE_START, input->eng_start_r, ngx->data.ENG_StartSelector[1]);
 		}
 
+		auto axis = throttle.axisValue();
+		if (axis > 5 && axis < 100) {
+			//printf("throttle cut %d\n", axis);
+			SimConnect_TransmitClientEvent(ngx->hSimConnect, 0, EVENT_THROTTLE_CUT, 0, SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+		} else if (axis >= 100) {
+			SimConnect_TransmitClientEvent(ngx->hSimConnect, 0, EVENT_THROTTLE_DECR, 0, SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+		}
+
 		if (throttle.read()) {
 			auto input = &throttle.data;
 
@@ -268,6 +276,8 @@ void run() {
 				ngx->send(EVT_CONTROL_STAND_FLAPS_LEVER_25, MOUSE_FLAG_LEFTSINGLE);
 			} else if (input->flaps_30) {
 				ngx->send(EVT_CONTROL_STAND_FLAPS_LEVER_30, MOUSE_FLAG_LEFTSINGLE);
+			} else if (input->flaps_40) {
+				ngx->send(EVT_CONTROL_STAND_FLAPS_LEVER_40, MOUSE_FLAG_LEFTSINGLE);
 			}
 
 			if (input->sw_12) {
@@ -279,7 +289,6 @@ void run() {
 			}
 
 			ngx->send(EVT_CONTROL_STAND_PARK_BRAKE_LEVER, input->brake_sw);
-			ngx->send(EVT_OH_DOME_SWITCH, input->toggle_1 ? 0 : 1);
 		}
 
 		if (panel.read()) {
@@ -388,8 +397,8 @@ void lab() {
 	unsigned char value = 0;
 
 	while (1) {
-		if (throttle.read()) {
-			printf("SW1=%d, SW2=%d, SW3=%d, BRAKE=%d, FLAPS_UP=%d\n", throttle.data.sw_12, throttle.data.sw_34, throttle.data.sw_56, throttle.data.brake_sw, throttle.data.flaps_up);
+		if (overhead.read()) {
+			printf(">>> StartSwL=%d, StatrSwR=%d, Taxi=%d\n", overhead.ctrl.eng_start_l, overhead.ctrl.eng_start_r, overhead.ctrl.taxi_light);
 		}
 
 		if (panel.read()) {

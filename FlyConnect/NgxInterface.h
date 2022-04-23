@@ -45,22 +45,29 @@ public:
 	}
 
 	HRESULT send(unsigned int eventId, unsigned int parameter, unsigned int currValue) {
-		if (parameter != currValue) return send(eventId, parameter);
+		if (parameter != currValue) {
+			return send(eventId, parameter);
+		}
 		return 0;
 	}
 
 	void pressButton(unsigned int eventId, unsigned int parameter) {
 		auto item = currValues.find(eventId);
-		if (item != currValues.end() && item->second == parameter) return;
+		if (item != currValues.end() && item->second == parameter) {
+			return;
+		}
 
 		auto hr = send(eventId, parameter ? MOUSE_FLAG_LEFTSINGLE : MOUSE_FLAG_LEFTRELEASE);
-		if (!hr) currValues[eventId] = parameter;
+		if (!hr) {
+			currValues[eventId] = parameter;
+		}
 	}
 
 	void adjust(EVENT_ID eventId, char value) {
 		int flag = value > 0 ? MOUSE_FLAG_WHEEL_UP : MOUSE_FLAG_WHEEL_DOWN;
-		for (unsigned char i = 0; i < abs(value); i++)
+		for (unsigned char i = 0; i < abs(value); i++) {
 			SimConnect_TransmitClientEvent(hSimConnect, 0, eventId, flag, SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+		}
 	}
 
 	void setData(SIMCONNECT_RECV_CLIENT_DATA *pData) {
@@ -178,6 +185,12 @@ void NgxInterface::connect() {
 	SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_COURSE_SELECTOR_R, "#70041");
 	SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_BARO_SELECTOR_L, "#69997");
 	SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_MINS_SELECTOR_L, "#69987");
+
+	SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_THROTTLE_CUT, "THROTTLE_CUT");
+	SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_THROTTLE_DECR, "THROTTLE_DECR");
+	SimConnect_AddClientEventToNotificationGroup(hSimConnect, GROUP_A, EVENT_THROTTLE_CUT);
+	SimConnect_AddClientEventToNotificationGroup(hSimConnect, GROUP_A, EVENT_THROTTLE_DECR);
+	SimConnect_SetNotificationGroupPriority(hSimConnect, GROUP_A, SIMCONNECT_GROUP_PRIORITY_HIGHEST);
 
 	connected = 1;
 	pollForDataThread = CreateThread(NULL, 0, PollForData, this, 0, NULL);

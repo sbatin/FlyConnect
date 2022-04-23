@@ -1,10 +1,10 @@
 #pragma pack(push, 1)
 struct throttle_data_t {
-	unsigned short reserved1;
-	unsigned char reserved2;
+	unsigned short reserved1; // first 10 bits - X
+	unsigned char reserved2;  // second 10 bits - Y
 	unsigned long buttons;
-	unsigned char z;
-	unsigned char rx;
+	unsigned char z;  // Eng 1 Rev
+	unsigned char rx; // Eng 2 Rev
 	unsigned char rz;
 	unsigned char ry;
 	unsigned char reserved3;
@@ -26,7 +26,7 @@ struct tq_buttons_t {
 	unsigned char /* NC */ : 1;
 	unsigned char reserved;
 	unsigned char /* NC */ : 2;
-	unsigned char toggle_1 : 1;
+	unsigned char flaps_40 : 1;
 	unsigned char brake_sw : 3;
 	unsigned char /* NC */ : 2;
 };
@@ -35,6 +35,7 @@ struct tq_buttons_t {
 static unsigned long tqButtonsPrev = 0;
 static unsigned char tqDataReady = 0;
 static throttle_data_t tqDataReceived = {0};
+static unsigned short tqAxisValue = 0;
 
 DWORD WINAPI __joystickLoop(LPVOID lpParameter) {
 	hid_device* device = (hid_device*)lpParameter;
@@ -42,6 +43,7 @@ DWORD WINAPI __joystickLoop(LPVOID lpParameter) {
     while (1) {
         int n = hid_read_timeout(device, (unsigned char*)&tqDataReceived, MAX_STR, 1);
 		if (n == sizeof(throttle_data_t)) {
+			tqAxisValue = (tqDataReceived.z + tqDataReceived.rx) / 2;
 			if (tqDataReceived.buttons != tqButtonsPrev) {
 				//while (!tqDataReady) {
 					tqButtonsPrev = tqDataReceived.buttons;
@@ -81,6 +83,10 @@ public:
 		wprintf(L"JoystickTQ connected: %s\n", wstr);
 
 		hLoop = CreateThread(NULL, 0, __joystickLoop, (void*)device, 0, NULL);
+	}
+
+	unsigned short axisValue() {
+		return tqAxisValue;
 	}
 
 	unsigned long read() {
