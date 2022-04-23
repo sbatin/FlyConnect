@@ -202,24 +202,23 @@ struct radio_data_t {
 };
 
 struct overhead_ctrl_t {
-	unsigned char eng_ign_r     : 1;
-	unsigned char eng_ign_l     : 1;
 	unsigned char /* NC */      : 1;
+	unsigned char apu_start     : 1;
+	unsigned char wheel_well    : 1;
 	unsigned char wing_light    : 1;
 	unsigned char anti_collisn  : 1;
 	unsigned char strobe_light  : 1;
 	unsigned char steady_light  : 1;
 	unsigned char logo_light    : 1;
 	unsigned char eng_start_r   : 3;
-	unsigned char /* NC */      : 1;
+	unsigned char eng_igniter   : 2;
 	unsigned char eng_start_l   : 3;
-	unsigned char apu_start     : 1;
-	unsigned char ldg_retract_l : 1;
-	unsigned char ldg_retract_r : 1;
-	unsigned char ldg_fixed_l   : 1;
-	unsigned char ldg_fixed_r   : 1;
-	unsigned char rw_turnoff_l  : 1;
-	unsigned char rw_turnoff_r  : 1;
-	unsigned char taxi_light    : 1;
 	unsigned char apu_off       : 1;
+	unsigned char taxi_light    : 1;
+	unsigned char rw_turnoff_r  : 1;
+	unsigned char rw_turnoff_l  : 1;
+	unsigned char ldg_fixed_r   : 1;
+	unsigned char ldg_fixed_l   : 1;
+	unsigned char ldg_retract_r : 1;
+	unsigned char ldg_retract_l : 1;
 };

@@ -56,6 +56,7 @@ public:
 	int close();
 	template<typename T> void sendData(T* data);
 	template<typename T> int readData(T* dest);
+	template<typename T> int readDataNew(T* dest);
 
 	char* readMessage() {
 		if (!connected) return NULL;
@@ -214,6 +215,52 @@ int SerialPort::readData(T* dest) {
 				uart_rx_buffer[uart_counter++] = sReceived;
 			}
 		}
+	}
+	
+	return 0;
+}
+
+template<typename T>
+int SerialPort::readDataNew(T* dest) {
+	if (!connected) return 0;
+
+	DWORD bytesReceived;
+	DWORD position = 0;
+	DWORD frameCounter;
+	unsigned char currentByte;
+
+	ReadFile(handle, uart_rx_buffer, SERAIL_RX_BUFFER_LENGTH, &bytesReceived, 0);
+
+	if (bytesReceived > 0) {
+		printf("Size = %d, received = ", bytesReceived);
+		for (DWORD i = 0; i < bytesReceived; i++) {
+			printf("%02X ", uart_rx_buffer[i]);
+		}
+
+		printf("\n");
+
+		while (position < bytesReceived) {
+			currentByte = uart_rx_buffer[position++];
+			switch (currentByte) {
+			// frame start byte
+			case SERAIL_PACKET_SIGNATURE:
+				frameCounter = 0;
+				break;
+			// replace indicator, read next byte with actual data
+			case SERAIL_REPLACE_SIGNATURE:
+				currentByte = uart_rx_buffer[position++] ^ 32;
+			default:
+				uart_rx_buffer[frameCounter++] = currentByte;
+			}
+
+			// first byte in frame is a frame size
+			if (frameCounter > uart_rx_buffer[0]) {
+				// TODO: check if frame size matches data size
+				memcpy(dest, uart_rx_buffer + 1, sizeof(T));
+			}
+		}
+
+		return 1;
 	}
 	
 	return 0;

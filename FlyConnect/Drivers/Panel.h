@@ -47,10 +47,10 @@ static unsigned char toSwitchState(bool v0, bool v2) {
 	return 1;
 }
 
-static unsigned char decodeRotaryState(unsigned char value) {
+static unsigned char decodeRotaryState(unsigned char value, unsigned char invert = 0) {
 	for (int i = 0; i < 8; i++) {
 		if (value & (1 << i)) {
-			return i + 1;
+			return invert ? invert - i : i + 1;
 		}
 	}
 
@@ -229,7 +229,7 @@ public:
 
 	void connect(const wchar_t* path) {
 		printf("Overhead connecting...\n");
-		if (port.connect(path, CBR_4800)) {
+		if (port.connect(path, CBR_19200)) {
 			char *message = port.readMessage();
 			printf("Overhead connected: %s\n", message);
 		}
@@ -240,9 +240,9 @@ public:
 	}
 
 	bool read() {
-		if (port.readData(&ctrl)) {
-			ctrl.eng_start_l = decodeRotaryState(ctrl.eng_start_l);
-			ctrl.eng_start_r = decodeRotaryState(ctrl.eng_start_r);
+		if (port.readDataNew(&ctrl)) {
+			ctrl.eng_start_l = decodeRotaryState(ctrl.eng_start_l, 3);
+			ctrl.eng_start_r = decodeRotaryState(ctrl.eng_start_r, 3);
 			return true;
 		}
 
