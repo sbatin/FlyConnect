@@ -240,7 +240,7 @@ public:
 	}
 
 	bool read() {
-		if (port.readDataNew(&ctrl)) {
+		if (port.readData(&ctrl)) {
 			ctrl.eng_start_l = decodeRotaryState(ctrl.eng_start_l, 3);
 			ctrl.eng_start_r = decodeRotaryState(ctrl.eng_start_r, 3);
 			return true;

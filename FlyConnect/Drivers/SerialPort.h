@@ -56,7 +56,6 @@ public:
 	int close();
 	template<typename T> void sendData(T* data);
 	template<typename T> int readData(T* dest);
-	template<typename T> int readDataNew(T* dest);
 
 	char* readMessage() {
 		if (!connected) return NULL;
@@ -153,6 +152,7 @@ void SerialPort::sendData(T* data) {
 	char* p = (char*)data;
 
 	uart_tx_buffer[uart_tx_count++] = SERAIL_PACKET_SIGNATURE;
+	uart_tx_buffer[uart_tx_count++] = sizeof(T);
 
 	for (int i = 0; i < sizeof(T); i++) {
 		if (p[i] == SERAIL_PACKET_SIGNATURE) {
@@ -166,62 +166,11 @@ void SerialPort::sendData(T* data) {
 		}
 	}
 
-	uart_tx_buffer[uart_tx_count++] = SERAIL_PACKET_SIGNATURE;
 	send(uart_tx_buffer, uart_tx_count);
 }
 
 template<typename T>
 int SerialPort::readData(T* dest) {
-	if (!connected) return 0;
-
-	DWORD iSize;
-	unsigned char sBuff[SERAIL_RX_BUFFER_LENGTH];
-	unsigned char sReceived;
-
-	ReadFile(handle, sBuff, SERAIL_RX_BUFFER_LENGTH, &iSize, 0);
-
-	if (iSize > 0) {
-		printf("Size = %d, received = ", iSize);
-		for (DWORD i = 0; i < iSize; i++) {
-			printf("%02X ", sBuff[i]);
-		}
-
-		printf("\n");
-
-		for (DWORD i = 0; i < iSize; i++) {
-			sReceived = sBuff[i];
-
-			// start byte detected, reset UART buffer
-			if (sReceived == SERAIL_PACKET_SIGNATURE) {
-				// whole packet has been received
-				if (uart_started && i == iSize - 1) {
-					uart_started = 0;
-					memcpy(dest, (const void*)uart_rx_buffer, sizeof(T));
-					return 1;
-				} else {
-					uart_counter = 0;
-					uart_replace = 0;
-					uart_started = 1;
-				}
-			// replace indicator detected
-			} else if (sReceived == SERAIL_REPLACE_SIGNATURE) {
-				uart_replace = 1;
-			// append byte to buffer
-			} else if (uart_counter < SERAIL_RX_BUFFER_LENGTH) {
-				if (uart_replace) {
-					uart_replace = 0;
-					sReceived ^= 32;
-				}
-				uart_rx_buffer[uart_counter++] = sReceived;
-			}
-		}
-	}
-	
-	return 0;
-}
-
-template<typename T>
-int SerialPort::readDataNew(T* dest) {
 	if (!connected) return 0;
 
 	DWORD bytesReceived;
