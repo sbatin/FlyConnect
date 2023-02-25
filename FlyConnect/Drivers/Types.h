@@ -32,6 +32,18 @@
 #pragma pack(push, 1)
 struct mip_data_t {
 	unsigned short flaps;
+	unsigned char annunAntiskidInop    : 1;
+	unsigned char /* reserved bits */  : 5;
+	unsigned char annunFlapsTransit    : 1;
+	unsigned char annunAutobreakDisarm : 1;
+	unsigned char annunFlapsExt        : 1;
+	unsigned char annunBelowGS         : 1;
+	unsigned char annunNGearRed        : 1;
+	unsigned char annunNGearGrn        : 1;
+	unsigned char annunRGearRed        : 1;
+	unsigned char annunRGearGrn        : 1;
+	unsigned char annunLGearRed        : 1;
+	unsigned char annunLGearGrn        : 1;
 	unsigned char annunWarnFltCont     : 1;
 	unsigned char annunWarnIRS         : 1;
 	unsigned char annunWarnFuel        : 1;
@@ -48,20 +60,8 @@ struct mip_data_t {
 	unsigned char annunSpeedbrakeArmed : 1;
 	unsigned char annunSpeedbrakNotArm : 1;
 	unsigned char annunStabOutOfTrim   : 1;
-	unsigned char /* reserved bits */  : 3;
-	unsigned char annunBelowGS         : 1;
-	unsigned char /* reserved bits */  : 2;
-	unsigned char annunAntiskidInop    : 1;
-	unsigned char annunAutobreakDisarm : 1;
-	unsigned char annunFlapsExt        : 1;
-	unsigned char annunLGearGrn        : 1;
-	unsigned char annunNGearGrn        : 1;
-	unsigned char annunRGearGrn        : 1;
-	unsigned char annunRGearRed        : 1;
-	unsigned char annunNGearRed        : 1;
-	unsigned char annunLGearRed        : 1;
-	unsigned char annunFlapsTransit    : 1;
 	unsigned char backlight;
+	unsigned char backlight2;
 };
 
 struct mcp_data_t {
@@ -91,24 +91,19 @@ struct mcp_data_t {
 
 struct mip_ctrl_t {
 	unsigned char mipSpdRefSel;
-	unsigned char ffUsed      : 1;
-	unsigned char ffReset     : 1;
-	unsigned char /* NC */    : 2;
+	unsigned char mipN1Sel    : 4;
+	unsigned char fuelFlowSw  : 2;
 	unsigned char mfdENG      : 1;
 	unsigned char mfdSYS      : 1;
-	unsigned char gearUP      : 1;
-	unsigned char gearDN      : 1;
-	unsigned char mipN1Sel    : 3;
-	unsigned char autoBreak   : 5;
+	unsigned char gearLever   : 2;
+	unsigned char autoBreak   : 6;
 	unsigned char masterCautn : 1;
 	unsigned char annunRecall : 1;
 	unsigned char mainPanelDU : 4;
 	unsigned char lowerDU     : 2;
 	unsigned char fireWarning : 1;
-	unsigned char lightsTest  : 1;
-	unsigned char lightsDim   : 1;
-	unsigned char afdsTest2   : 1;
-	unsigned char afdsTest1   : 1;
+	unsigned char lightsSw    : 2;
+	unsigned char afdsTestSw  : 2;
 	unsigned char afdsRstFMC  : 1;
 	unsigned char afdsRstAT   : 1;
 	unsigned char afdsRstAP   : 1;
@@ -149,14 +144,12 @@ struct mcp_ctrl_t {
 	unsigned char efisDATA : 1;
 	unsigned char efisARPT : 1;
 	unsigned char /* NC */ : 1;
-	unsigned char efisVOR2 : 1;
-	unsigned char efisADF2 : 1;
+	unsigned char efisVOR2 : 2;
 	unsigned char efisBARO : 1;
 	unsigned char efisMTRS : 1;
 	unsigned char efisFPV  : 1;
 	unsigned char efisMINS : 1;
-	unsigned char efisADF1 : 1;
-	unsigned char efisVOR1 : 1;
+	unsigned char efisVOR1 : 2;
 	unsigned char efisTERR : 1;
 	unsigned char efisWPT  : 1;
 	unsigned char efisSTA  : 1;

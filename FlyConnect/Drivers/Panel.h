@@ -57,16 +57,17 @@ static unsigned char decodeRotaryState(unsigned char value, unsigned char invert
 	return 0;
 }
 
-enum DisplayState { Blank = 0, Enabled = 1, Overspeed = 2, Underspeed = 3 };
+static unsigned char decodeSwitchState(unsigned char value, bool inverse = false) {
+	if (value == 2) {
+		return inverse ? 0 : 2;
+	} else if (value == 1) {
+		return inverse ? 2 : 0;
+	} else {
+		return 1;
+	}
+}
 
-struct PanelInput {
-	unsigned char vorAdfSel1;
-	unsigned char vorAdfSel2;
-	unsigned char mainLights;
-	unsigned char disengageLights;
-	unsigned char fuelFlowSw;
-	unsigned char gearLever;
-};
+enum DisplayState { Blank = 0, Enabled = 1, Overspeed = 2, Underspeed = 3 };
 
 #pragma pack(push, 1)
 struct usb_data_t {
@@ -94,7 +95,6 @@ public:
 	struct mip_data_t *mipData;
 	struct mcp_ctrl_t *mcpCtrl;
 	struct mip_ctrl_t *mipCtrl;
-	struct PanelInput input;
 
 	Panel(void) {};
 	~Panel(void) {};
@@ -198,19 +198,24 @@ public:
 		mcpCtrl->value = 0;
 		unsigned char prevMode = mcpCtrl->efisMode;
 		unsigned char prevRange = mcpCtrl->efisRange;
+		unsigned char prevSpdRefSel = mipCtrl->mipSpdRefSel;
+		unsigned char prevN1Sel = mipCtrl->mipN1Sel;
+		unsigned char prevAutoBreak = mipCtrl->autoBreak;
 
 		if (hid_read_timeout(hidPanel, (unsigned char*)&usbDataIn, sizeof(usb_ctrl_t), 1)) {
-			mcpCtrl->efisMode = mcpCtrl->efisMode ? decodeRotaryState(mcpCtrl->efisMode) - 1 : prevMode;
-			mcpCtrl->efisRange = mcpCtrl->efisRange ? decodeRotaryState(mcpCtrl->efisRange) - 1 : prevRange;
-			input.vorAdfSel1 = toSwitchState(mcpCtrl->efisVOR1, mcpCtrl->efisADF1);
-			input.vorAdfSel2 = toSwitchState(mcpCtrl->efisVOR2, mcpCtrl->efisADF2);
-			mipCtrl->autoBreak = decodeRotaryState(mipCtrl->autoBreak);
+			mipCtrl->mipSpdRefSel = mipCtrl->mipSpdRefSel ? decodeRotaryState(mipCtrl->mipSpdRefSel, 7) - 1 : prevSpdRefSel;
+			mipCtrl->mipN1Sel = mipCtrl->mipN1Sel ? decodeRotaryState(mipCtrl->mipN1Sel, 4) - 1 : prevN1Sel;
+			mipCtrl->autoBreak = mipCtrl->autoBreak ? decodeRotaryState(mipCtrl->autoBreak) - 1 : prevAutoBreak;
 			mipCtrl->mainPanelDU = decodeRotaryState(mipCtrl->mainPanelDU);
 			mipCtrl->lowerDU = decodeRotaryState(mipCtrl->lowerDU);
-			input.fuelFlowSw = toSwitchState(mipCtrl->ffReset, mipCtrl->ffUsed);
-			input.mainLights = toSwitchState(mipCtrl->lightsTest, mipCtrl->lightsDim);
-			input.disengageLights = toSwitchState(mipCtrl->afdsTest1, mipCtrl->afdsTest2);
-			input.gearLever = toSwitchState(mipCtrl->gearUP, mipCtrl->gearDN);
+			mcpCtrl->efisMode = mcpCtrl->efisMode ? decodeRotaryState(mcpCtrl->efisMode) - 1 : prevMode;
+			mcpCtrl->efisRange = mcpCtrl->efisRange ? decodeRotaryState(mcpCtrl->efisRange) - 1 : prevRange;
+			mipCtrl->fuelFlowSw = decodeSwitchState(mipCtrl->fuelFlowSw, true);
+			mipCtrl->gearLever = decodeSwitchState(mipCtrl->gearLever);
+			mipCtrl->lightsSw = decodeSwitchState(mipCtrl->lightsSw);
+			mipCtrl->afdsTestSw = decodeSwitchState(mipCtrl->afdsTestSw, true);
+			mcpCtrl->efisVOR1 = decodeSwitchState(mcpCtrl->efisVOR1, true);
+			mcpCtrl->efisVOR2 = decodeSwitchState(mcpCtrl->efisVOR2);
 			result = true;
 		}
 
@@ -286,6 +291,10 @@ public:
 			char *message = port.readMessage();
 			printf("VHF connected: %s\n", message);
 		}
+	}
+
+	void disconnect() {
+		port.close();
 	}
 
 	void test(unsigned char on) {

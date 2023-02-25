@@ -322,10 +322,10 @@ void run() {
 					break;
 			}
 
-			if (panel.input.gearLever != ngx->data.MAIN_GearLever) {
-				if (panel.input.gearLever == 0) ngx->send(EVT_GEAR_LEVER, MOUSE_FLAG_RIGHTSINGLE);
-				if (panel.input.gearLever == 1) ngx->send(EVT_GEAR_LEVER_OFF, MOUSE_FLAG_LEFTSINGLE);
-				if (panel.input.gearLever == 2) ngx->send(EVT_GEAR_LEVER, MOUSE_FLAG_LEFTSINGLE);
+			if (mipInput->gearLever != ngx->data.MAIN_GearLever) {
+				if (mipInput->gearLever == 0) ngx->send(EVT_GEAR_LEVER, MOUSE_FLAG_RIGHTSINGLE);
+				if (mipInput->gearLever == 1) ngx->send(EVT_GEAR_LEVER_OFF, MOUSE_FLAG_LEFTSINGLE);
+				if (mipInput->gearLever == 2) ngx->send(EVT_GEAR_LEVER, MOUSE_FLAG_LEFTSINGLE);
 			}
 
 			// MCP
@@ -356,11 +356,11 @@ void run() {
 			ngx->pressButton(EVT_DSP_CPT_AT_RESET_SWITCH, mipInput->afdsRstAT);
 			ngx->pressButton(EVT_DSP_CPT_FMC_RESET_SWITCH, mipInput->afdsRstFMC);
 			ngx->send(EVT_MPM_AUTOBRAKE_SELECTOR, mipInput->autoBreak, ngx->data.MAIN_AutobrakeSelector);
-			ngx->send(EVT_EFIS_CPT_VOR_ADF_SELECTOR_L, panel.input.vorAdfSel1, ngx->data.EFIS_VORADFSel1[0]);
-			ngx->send(EVT_EFIS_CPT_VOR_ADF_SELECTOR_R, panel.input.vorAdfSel2, ngx->data.EFIS_VORADFSel2[0]);
-			ngx->send(EVT_DSP_CPT_MASTER_LIGHTS_SWITCH, panel.input.mainLights, ngx->data.MAIN_LightsSelector);
-			ngx->send(EVT_DSP_CPT_DISENGAGE_TEST_SWITCH, panel.input.disengageLights, ngx->data.MAIN_DisengageTestSelector[0]);
-			ngx->send(EVT_MPM_FUEL_FLOW_SWITCH, panel.input.fuelFlowSw, ngx->data.MAIN_FuelFlowSelector);
+			ngx->send(EVT_EFIS_CPT_VOR_ADF_SELECTOR_L, mcpInput->efisVOR1, ngx->data.EFIS_VORADFSel1[0]);
+			ngx->send(EVT_EFIS_CPT_VOR_ADF_SELECTOR_R, mcpInput->efisVOR2, ngx->data.EFIS_VORADFSel2[0]);
+			ngx->send(EVT_DSP_CPT_MASTER_LIGHTS_SWITCH, mipInput->lightsSw, ngx->data.MAIN_LightsSelector);
+			ngx->send(EVT_DSP_CPT_DISENGAGE_TEST_SWITCH, mipInput->afdsTestSw, ngx->data.MAIN_DisengageTestSelector[0]);
+			ngx->send(EVT_MPM_FUEL_FLOW_SWITCH, mipInput->fuelFlowSw, ngx->data.MAIN_FuelFlowSelector);
 			ngx->send(EVT_DSP_CPT_MAIN_DU_SELECTOR, mipInput->mainPanelDU, ngx->data.MAIN_MainPanelDUSel[0]);
 			ngx->send(EVT_DSP_CPT_LOWER_DU_SELECTOR, mipInput->lowerDU, ngx->data.MAIN_LowerDUSel[0]);
 			ngx->pressButton(EVT_MASTER_CAUTION_LIGHT_LEFT, mipInput->masterCautn);
@@ -402,8 +402,8 @@ void lab() {
 		}
 
 		if (panel.read()) {
-			printf(">>> Control received, MCP_Enc_Val = %d, MCP_Enc_Num = %d\n", panel.mcpCtrl->value, panel.mcpCtrl->encoder);
 			printf(">>> Control received, Autobreak = %d, EFIS Range = %d, EFIS Mode = %d, Main Panel DU = %d, Lower DU = %d\n", panel.mipCtrl->autoBreak, panel.mcpCtrl->efisRange, panel.mcpCtrl->efisMode, panel.mipCtrl->mainPanelDU, panel.mipCtrl->lowerDU);
+			printf(">>>                   VOR_ADF_1 = %d, TestLights = %d\n", panel.mcpCtrl->efisVOR1, panel.mipCtrl->afdsTestSw);
 			value+= (char)panel.mcpCtrl->value;
 		}
 
@@ -418,13 +418,13 @@ void lab() {
 		panel.mcpData->speedCrsL = displayHi(value) & mask & displayLo((float)0.78);
 		panel.mcpData->vspeedCrsR = 0xDEFFFFFF & displayLo(-1000);
 		panel.mcpData->altitudeHdg = displayHi(counter1) & displayLo(getGaugeValue(value));
-		panel.mipData->backlight = 0xFF;
+		panel.mipData->backlight = 255;
+		panel.mipData->backlight2 = 255;
 		panel.mcpData->brightness = 10;
-		panel.mipData->annunAntiskidInop = 1;
+		panel.mipData->annunWarnFltCont = 1;
 		panel.mipData->annunATRstRed = 1;
 		panel.mipData->annunBelowGS = 1;
 		panel.mipData->annunFlapsTransit = 1;
-		panel.mipData->annunLGearRed = 1;
 		panel.send();
 		radio.data.nav1.active = 0;
 		radio.data.nav1.standby = 0;
