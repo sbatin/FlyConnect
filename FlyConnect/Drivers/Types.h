@@ -195,14 +195,14 @@ struct radio_data_t {
 };
 
 struct overhead_ctrl_t {
-	unsigned char /* NC */      : 1;
-	unsigned char apu_start     : 1;
-	unsigned char wheel_well    : 1;
-	unsigned char wing_light    : 1;
-	unsigned char anti_collisn  : 1;
-	unsigned char strobe_light  : 1;
-	unsigned char steady_light  : 1;
 	unsigned char logo_light    : 1;
+	unsigned char steady_light  : 1;
+	unsigned char strobe_light  : 1;
+	unsigned char anti_collisn  : 1;
+	unsigned char wing_light    : 1;
+	unsigned char wheel_well    : 1;
+	unsigned char apu_start     : 1;
+	unsigned char /* NC */      : 1;
 	unsigned char eng_start_r   : 3;
 	unsigned char eng_igniter   : 2;
 	unsigned char eng_start_l   : 3;
